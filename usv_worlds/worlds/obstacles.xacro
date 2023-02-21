@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<!-- Macro to insert simple obstacles into the world -->
+<world xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Load definition of simple_box -->
+  <xacro:include filename="$(find usv_worlds)/worlds/moving_box.xacro" />
+  <xacro:include filename="$(find usv_worlds)/worlds/simple_box.xacro" />
+  
+  <xacro:macro name="obstacles">
+
+    <xacro:moving_box name = "moving_box" x="10" y="10" />
+    <xacro:moving_box name = "moving_box2" x="20" y="20" />
+
+    <xacro:simple_box name="box_north" x="100" y="60" Y="200" />
+    <xacro:simple_box name="box_south" x="-50" y="60" Y="200" />
+    <xacro:simple_box name="box_east" x="25" y="-40" X="150" />
+    <xacro:simple_box name="box_west" x="-10" y="160" X="80" />
+
+  </xacro:macro>
+ 
+</world>
