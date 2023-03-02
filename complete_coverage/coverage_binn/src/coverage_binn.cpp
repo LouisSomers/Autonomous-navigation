@@ -22,9 +22,9 @@ CoverageBinn::CoverageBinn() : m_mapInitialized(false)
   m_y0 = nhP.param("y0", -51.0);
   m_x1 = nhP.param("x1", 100.0);
   m_y1 = nhP.param("y1", 50.0);
-  double cellRadius = nhP.param("cell_radius", 2.5);
-  double scanRange = nhP.param("scan_range", 12);
-  m_circleAcceptance = nhP.param("goal_tolerance", 3.0);
+  double cellRadius = nhP.param("cell_radius", 2.5); // SET TO 2.5
+  double scanRange = nhP.param("scan_range", 20); // set to 12 originally
+  m_circleAcceptance = nhP.param("goal_tolerance", 1.0); // set to 3 originally
 
   // Set up partition. TODO: set up with parameters
   m_partition = PartitionBinn(nh);
@@ -121,47 +121,167 @@ void CoverageBinn::BINN()
   // TODO: doesn't work with higher deltaTime
   evolveNeuralNetwork(0.01);
 
-  // Find next position
-  int lNext, kNext;
-  double yawNext;
-  findNextCell(lNext, kNext, yawNext);
-  double xNext, yNext;
-  m_partition.gridToWorld(lNext, kNext, xNext, yNext);
+  // GOAL POSITION AT THE MOMENT CHANGE IT TO AN ARGUMENT THAT IS ASKED
+  double xTarget, yTarget;
+  xTarget = 45;
+  yTarget = 45;
+  double xNext, yNext, yawNext, DistanceToTarget;
+  findNextTargetWaypoint(xNext,yNext,yawNext,DistanceToTarget);
 
-  // Find current position
+  // Find current position ( the current cell not the exact position)
+  int l_current, k_current;
+  m_partition.worldToGrid(m_pose.x, m_pose.y, l_current, k_current);
+  double xCurrent, yCurrent;
+  m_partition.gridToWorld(l_current, k_current, xCurrent, yCurrent); // center of the circle
+  // Set current cell as covered, if we pass even a little in it 
+  // In that way we know how he navigates
+  double cellRadius = 2.5;
+  if (pointDistance(m_pose.x, m_pose.y, xCurrent, yCurrent) <
+      cellRadius)
+  {
+    m_partition.setCellCovered(l_current, k_current, true);
+  }
+  publishGoal(xNext,yNext,yawNext);
+
+  ROS_INFO_STREAM("Current pos: " << m_pose.x << ", " << m_pose.y);
+  ROS_INFO_STREAM("Next pos:    " << xNext << ", " << yNext << ", " << yawNext);
+  ROS_INFO_STREAM("Goal pos coordinates:"<< xTarget << "," << yTarget << "," << DistanceToTarget);
+}
+// THIS WORKS NOW ADAPT IT TO AVOID THE OBSTACLE
+void CoverageBinn::findNextTargetWaypoint(double& xNext, double& yNext, double& yawNext, double& DistanceToTarget)
+{
+  // Get cell position HERE THE CELLS ARE FOUND FOR THE NEXT WAYPOINT
+  double angle_change;
+  angle_change = 3;
   int l, k;
   m_partition.worldToGrid(m_pose.x, m_pose.y, l, k);
-  double xCurrent, yCurrent;
-  m_partition.gridToWorld(l, k, xCurrent, yCurrent);
+  // Get Target position and the cell of the target position
+  double xTarget, yTarget;
+  xTarget = 45;
+  yTarget = 45;
+  int lTarget,kTarget;
+  m_partition.worldToGrid(xTarget,yTarget,lTarget,kTarget);
+  double DistanceToTargetX,DistanceToTargetY;
+  DistanceToTargetX = m_pose.x-xTarget;
+  DistanceToTargetY = m_pose.y-yTarget;
+  DistanceToTarget = sqrt(DistanceToTargetX*DistanceToTargetX+DistanceToTargetY*DistanceToTargetY);
 
-  // Set current cell as covered, if we're within a circle of acceptance
-  if (pointDistance(m_pose.x, m_pose.y, xCurrent, yCurrent) <
-      m_circleAcceptance)
+  // will look in front of the track to see if there are obstacles
+  int Next_cellx, Next_celly, Next_cellx2, Next_celly2;
+  double angle_of_line;
+  if (xTarget-m_pose.x != 0)
   {
-    m_partition.setCellCovered(l, k, true);
+    angle_of_line = atan((yTarget-m_pose.y)/(xTarget-m_pose.x));
   }
-
-  static int lGoal = lNext;
-  static int kGoal = kNext;
-  static bool first = true;
-  if (lGoal != lNext || kGoal != kNext || first)
-  {
-    first = false;
-    // Not covered, free and already in goal cell => don't switch target
-    if (m_partition.getCellStatus(l, k) == PartitionBinn::Free &&
-        !m_partition.isCellCovered(l, k) && lGoal == l && kGoal == k)
-    {
-    }
-    else
-    {
-      lGoal = lNext;
-      kGoal = kNext;
-      publishGoal(xNext, yNext, yawNext);
-    }
+  else {
+    angle_of_line = M_PI/2;
   }
+  // a point in front (1 cell)
+  Next_cellx = m_pose.x+6*cos(angle_of_line);
+  Next_celly = m_pose.y+6*sin(angle_of_line);
 
-  ROS_INFO_STREAM("Current pos: " << l << ", " << k);
-  ROS_INFO_STREAM("Next pos:    " << lNext << ", " << kNext << ", " << yawNext);
+  // a point further away (2 cells)
+  Next_cellx2 = m_pose.x+12*cos(angle_of_line);
+  Next_celly2 = m_pose.y+12*sin(angle_of_line);
+
+  int lNext_cell, kNext_cell, lNext_cell2, kNext_cell2;
+  m_partition.worldToGrid(Next_cellx,Next_celly,lNext_cell,kNext_cell);
+  m_partition.worldToGrid(Next_cellx2,Next_celly2,lNext_cell2,kNext_cell2);
+
+  if (m_partition.getCellStatus(lNext_cell,kNext_cell) == PartitionBinn::Free && m_partition.getCellStatus(lNext_cell2,kNext_cell2) == PartitionBinn::Free)
+  { // if there are no obstacles the USV moves further towards the target
+    xNext = xTarget;
+    yNext = yTarget;
+    double yawNeeded;
+    m_dubin.getTargetHeading(m_pose.x, m_pose.y, m_pose.yaw, xTarget,
+                                yTarget, yawNeeded);
+    yawNext = yawNeeded;
+  }
+  else { // There is an obstruction on the way to the point, so need to go around it
+      int i = 2;
+      double ii;
+      double Next_cellx2_blocked, Next_celly2_blocked;
+      double Next_cellx_blocked, Next_celly_blocked;
+      while (m_partition.getCellStatus(lNext_cell,kNext_cell) == PartitionBinn::Blocked && m_partition.getCellStatus(lNext_cell2,kNext_cell2) == PartitionBinn::Blocked)
+      {
+        ii = i*M_PI /180;
+        double angle_obstruct;
+        if (xTarget-m_pose.x != 0)
+        {
+          if (xTarget-m_pose.x <= 0)
+          {
+            angle_obstruct = atan((yTarget-m_pose.y)/(xTarget-m_pose.x))+ M_PI;
+          }
+          else{
+            angle_obstruct = atan((yTarget-m_pose.y)/(xTarget-m_pose.x));
+          }
+          
+        }
+        else{
+          if (yTarget-m_pose.y <= 0)
+          {
+            angle_obstruct = M_PI /2;
+          }
+          else {
+            angle_obstruct = M_PI /2+ M_PI;
+          }
+        }
+        angle_obstruct = atan((yTarget-m_pose.y)/(xTarget-m_pose.x));
+        Next_cellx_blocked = m_pose.x+6*(sin(angle_obstruct)+sin(ii));
+        Next_celly_blocked = m_pose.y+6*(sin(angle_obstruct)+cos(ii));
+       
+        Next_cellx2_blocked = m_pose.x+12*(sin(angle_obstruct)+sin(ii));
+        Next_celly2_blocked= m_pose.y+12*(sin(angle_obstruct)+cos(ii));
+        
+      
+        m_partition.worldToGrid(Next_cellx_blocked,Next_celly_blocked,lNext_cell,kNext_cell);
+        m_partition.worldToGrid(Next_cellx2_blocked,Next_celly2_blocked,lNext_cell2,kNext_cell2);
+        i += angle_change;
+      }
+      
+       while (m_partition.getCellStatus(lNext_cell,kNext_cell) == PartitionBinn::Blocked)
+      {
+        ii = i*M_PI /180;
+        double angle_obstruct;
+        if (xTarget-m_pose.x != 0)
+        {
+          if (xTarget-m_pose.x <= 0)
+          {
+            angle_obstruct = atan((yTarget-m_pose.y)/(xTarget-m_pose.x))+ M_PI;
+          }
+          else{
+            angle_obstruct = atan((yTarget-m_pose.y)/(xTarget-m_pose.x));
+          }
+          
+        }
+        else{
+          if (yTarget-m_pose.y <= 0)
+          {
+            angle_obstruct = M_PI /2;
+          }
+          else {
+            angle_obstruct = M_PI /2+ M_PI;
+          }
+        }
+      
+        Next_cellx_blocked = m_pose.x+6*(sin(angle_obstruct)+sin(ii));
+        Next_celly_blocked = m_pose.y+6*(sin(angle_obstruct)+cos(ii));
+       
+        Next_cellx2_blocked = m_pose.x+12*(sin(angle_obstruct)+sin(ii));
+        Next_celly2_blocked= m_pose.y+12*(sin(angle_obstruct)+cos(ii));
+        
+      
+        m_partition.worldToGrid(Next_cellx_blocked,Next_celly_blocked,lNext_cell,kNext_cell);
+        m_partition.worldToGrid(Next_cellx2_blocked,Next_celly2_blocked,lNext_cell2,kNext_cell2);
+        i += angle_change;// change the speed at which it changes the angle it looks at
+      }
+      xNext = Next_cellx_blocked;//Nextxx; // could also use the grid to avoid the obstacle
+      yNext=  Next_celly_blocked;//Nextyy;
+      double yawNeeded2;
+      m_dubin.getTargetHeading(m_pose.x, m_pose.y, m_pose.yaw, xNext,
+                                yNext, yawNeeded2);
+      yawNext = yawNeeded2;
+  }
 }
 
 void CoverageBinn::evolveNeuralNetwork(double deltaTime)
@@ -292,7 +412,7 @@ void CoverageBinn::getNeighbors2(int l, int k,
 
 void CoverageBinn::findNextCell(int& lNext, int& kNext, double& yawNext)
 {
-  // Get cell position
+  // Get cell position HERE THE CELLS ARE FOUND FOR THE NEXT WAYPOINT
   int l, k;
   m_partition.worldToGrid(m_pose.x, m_pose.y, l, k);
 
@@ -319,6 +439,7 @@ void CoverageBinn::findNextCell(int& lNext, int& kNext, double& yawNext)
     m_partition.gridToWorld(l, k, xCurrent, yCurrent);
 
     // Target position
+    
     double xTarget, yTarget;
     m_partition.gridToWorld(nb.l, nb.k, xTarget, yTarget);
 
@@ -342,6 +463,7 @@ void CoverageBinn::findNextCell(int& lNext, int& kNext, double& yawNext)
   lNext = best.l;
   kNext = best.k;
 }
+
 
 double CoverageBinn::scoreFunction(double neuralActivity, double yaw,
                                    double targetYaw)
