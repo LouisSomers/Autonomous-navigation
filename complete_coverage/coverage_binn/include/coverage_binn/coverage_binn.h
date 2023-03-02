@@ -25,6 +25,8 @@ class CoverageBinn {
   void getNeighbors2(int l, int k,
 					 std::vector<PartitionBinn::Point>& neighbors);
   void findNextCell(int& lNext, int& kNext, double& yawNext);
+  // added the void next target waypoint in this
+  void findNextTargetWaypoint(double& xNext, double& yNext, double& yawNext, double& DistanceToTarget);
   double scoreFunction(double neuralActivity, double yaw, double targetYaw);
   void publishGoal(double x, double y, double yaw);
 
