@@ -3,7 +3,9 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <tf2/utils.h>
 
+
 #include <coverage_boustrophedon/DubinInput.h>
+
 
 double pointDistance(double x0, double y0, double x1, double y1)
 {
@@ -125,8 +127,22 @@ void CoverageBinn::BINN()
   double xTarget, yTarget;
   xTarget = 45;
   yTarget = 45;
+  int count = 0;
+  if (xTarget-m_pose.x <= 0.5 && yTarget-m_pose.y <= 0.5)
+  {
+    ROS_INFO_STREAM("Waypoint reached, navigating towards next waypoint");
+    // waypoint reached next waypoint
+    count = 1 ;
+
+  }
+  if (count ==1)
+  {
+    xTarget = 0;
+    yTarget = 0;
+  }
+
   double xNext, yNext, yawNext, DistanceToTarget;
-  findNextTargetWaypoint(xNext,yNext,yawNext,DistanceToTarget);
+  findNextTargetWaypoint(xTarget, yTarget, xNext,yNext,yawNext,DistanceToTarget);
 
   // Find current position ( the current cell not the exact position)
   int l_current, k_current;
@@ -146,19 +162,20 @@ void CoverageBinn::BINN()
   ROS_INFO_STREAM("Current pos: " << m_pose.x << ", " << m_pose.y);
   ROS_INFO_STREAM("Next pos:    " << xNext << ", " << yNext << ", " << yawNext);
   ROS_INFO_STREAM("Goal pos coordinates:"<< xTarget << "," << yTarget << "," << DistanceToTarget);
+
+
 }
+
+
 // THIS WORKS NOW ADAPT IT TO AVOID THE OBSTACLE
-void CoverageBinn::findNextTargetWaypoint(double& xNext, double& yNext, double& yawNext, double& DistanceToTarget)
+void CoverageBinn::findNextTargetWaypoint(double& xTarget, double& yTarget, double& xNext, double& yNext, double& yawNext, double& DistanceToTarget)
 {
   // Get cell position HERE THE CELLS ARE FOUND FOR THE NEXT WAYPOINT
   double angle_change;
-  angle_change = 3;
+  angle_change = 5; // turns always right now check if left is a better option and decide on which way to turn then
   int l, k;
   m_partition.worldToGrid(m_pose.x, m_pose.y, l, k);
   // Get Target position and the cell of the target position
-  double xTarget, yTarget;
-  xTarget = 45;
-  yTarget = 45;
   int lTarget,kTarget;
   m_partition.worldToGrid(xTarget,yTarget,lTarget,kTarget);
   double DistanceToTargetX,DistanceToTargetY;
@@ -169,12 +186,23 @@ void CoverageBinn::findNextTargetWaypoint(double& xNext, double& yNext, double& 
   // will look in front of the track to see if there are obstacles
   int Next_cellx, Next_celly, Next_cellx2, Next_celly2;
   double angle_of_line;
-  if (xTarget-m_pose.x != 0)
+  
+  if (xTarget-m_pose.x != 0) // else you move on a line parallel with the yaxis --> 90° or 270°
   {
-    angle_of_line = atan((yTarget-m_pose.y)/(xTarget-m_pose.x));
+    if (yTarget >= m_pose.y){ // you move towards the North (up in the axis)
+      angle_of_line = atan((yTarget-m_pose.y)/(xTarget-m_pose.x));
+    }
+    else{
+      angle_of_line = atan((yTarget-m_pose.y)/(xTarget-m_pose.x))+ M_PI;
+    }
   }
   else {
-    angle_of_line = M_PI/2;
+    if (yTarget >= m_pose.y){
+      angle_of_line = M_PI/2;
+    }
+    else {
+      angle_of_line = M_PI/2+ M_PI;
+    }
   }
   // a point in front (1 cell)
   Next_cellx = m_pose.x+6*cos(angle_of_line);
@@ -188,99 +216,79 @@ void CoverageBinn::findNextTargetWaypoint(double& xNext, double& yNext, double& 
   m_partition.worldToGrid(Next_cellx,Next_celly,lNext_cell,kNext_cell);
   m_partition.worldToGrid(Next_cellx2,Next_celly2,lNext_cell2,kNext_cell2);
 
+  // iIf there are no obstacles the USV moves further towards the target
   if (m_partition.getCellStatus(lNext_cell,kNext_cell) == PartitionBinn::Free && m_partition.getCellStatus(lNext_cell2,kNext_cell2) == PartitionBinn::Free)
-  { // if there are no obstacles the USV moves further towards the target
+  { 
     xNext = xTarget;
     yNext = yTarget;
     double yawNeeded;
     m_dubin.getTargetHeading(m_pose.x, m_pose.y, m_pose.yaw, xTarget,
                                 yTarget, yawNeeded);
     yawNext = yawNeeded;
+ 
   }
-  else { // There is an obstruction on the way to the point, so need to go around it
-      int i = 2;
-      double ii;
-      double Next_cellx2_blocked, Next_celly2_blocked;
-      double Next_cellx_blocked, Next_celly_blocked;
-      while (m_partition.getCellStatus(lNext_cell,kNext_cell) == PartitionBinn::Blocked && m_partition.getCellStatus(lNext_cell2,kNext_cell2) == PartitionBinn::Blocked)
-      {
-        ii = i*M_PI /180;
-        double angle_obstruct;
-        if (xTarget-m_pose.x != 0)
-        {
-          if (xTarget-m_pose.x <= 0)
-          {
-            angle_obstruct = atan((yTarget-m_pose.y)/(xTarget-m_pose.x))+ M_PI;
-          }
-          else{
-            angle_obstruct = atan((yTarget-m_pose.y)/(xTarget-m_pose.x));
-          }
-          
-        }
-        else{
-          if (yTarget-m_pose.y <= 0)
-          {
-            angle_obstruct = M_PI /2;
-          }
-          else {
-            angle_obstruct = M_PI /2+ M_PI;
-          }
-        }
-        angle_obstruct = atan((yTarget-m_pose.y)/(xTarget-m_pose.x));
-        Next_cellx_blocked = m_pose.x+6*(sin(angle_obstruct)+sin(ii));
-        Next_celly_blocked = m_pose.y+6*(sin(angle_obstruct)+cos(ii));
+  // There is an obstruction on the way to the point, so need to go around it
+  else { 
+      //right while loop
+      int i = 0;
+      double ii,iii;
+      double Next_cellx2_blocked_right, Next_celly2_blocked_right, Next_cellx2_blocked_left,Next_celly2_blocked_left;
+      double Next_cellx_blocked_right, Next_celly_blocked_right,Next_cellx_blocked_left,Next_celly_blocked_left;
+      int lNext_cell_right,kNext_cell_right;
+      int lNext_cell2_right,kNext_cell2_right;
+      do {
+        ii = i*M_PI/180;
+        // The calculation for the turning to the right
+        Next_cellx_blocked_right = m_pose.x+6*(cos(angle_of_line)+cos(ii));
+        Next_celly_blocked_right = m_pose.y+6*(sin(angle_of_line)+sin(ii));
        
-        Next_cellx2_blocked = m_pose.x+12*(sin(angle_obstruct)+sin(ii));
-        Next_celly2_blocked= m_pose.y+12*(sin(angle_obstruct)+cos(ii));
+        Next_cellx2_blocked_right = m_pose.x+12*(cos(angle_of_line)+cos(ii));
+        Next_celly2_blocked_right= m_pose.y+12*(sin(angle_of_line)+sin(ii));
         
-      
-        m_partition.worldToGrid(Next_cellx_blocked,Next_celly_blocked,lNext_cell,kNext_cell);
-        m_partition.worldToGrid(Next_cellx2_blocked,Next_celly2_blocked,lNext_cell2,kNext_cell2);
+        m_partition.worldToGrid(Next_cellx_blocked_right,Next_celly_blocked_right,lNext_cell_right,kNext_cell_right);
+        m_partition.worldToGrid(Next_cellx2_blocked_right,Next_celly2_blocked_right,lNext_cell2_right,kNext_cell2_right);
+
         i += angle_change;
       }
-      
-       while (m_partition.getCellStatus(lNext_cell,kNext_cell) == PartitionBinn::Blocked)
-      {
-        ii = i*M_PI /180;
-        double angle_obstruct;
-        if (xTarget-m_pose.x != 0)
-        {
-          if (xTarget-m_pose.x <= 0)
-          {
-            angle_obstruct = atan((yTarget-m_pose.y)/(xTarget-m_pose.x))+ M_PI;
-          }
-          else{
-            angle_obstruct = atan((yTarget-m_pose.y)/(xTarget-m_pose.x));
-          }
-          
-        }
-        else{
-          if (yTarget-m_pose.y <= 0)
-          {
-            angle_obstruct = M_PI /2;
-          }
-          else {
-            angle_obstruct = M_PI /2+ M_PI;
-          }
-        }
-      
-        Next_cellx_blocked = m_pose.x+6*(sin(angle_obstruct)+sin(ii));
-        Next_celly_blocked = m_pose.y+6*(sin(angle_obstruct)+cos(ii));
+      while (m_partition.getCellStatus(lNext_cell_right,kNext_cell_right) == PartitionBinn::Blocked || m_partition.getCellStatus(lNext_cell2_right,kNext_cell2_right) == PartitionBinn::Blocked);
+      //left while loop
+      i = 0;
+      int lNext_cell_left,kNext_cell_left;
+      int lNext_cell2_left,kNext_cell2_left;
+      do {
+        iii = -i*M_PI/180;
+        // The calculation for the turning to the left
+        Next_cellx_blocked_left = m_pose.x+6*(cos(angle_of_line)+cos(iii));
+        Next_celly_blocked_left = m_pose.y+6*(sin(angle_of_line)+sin(iii));
        
-        Next_cellx2_blocked = m_pose.x+12*(sin(angle_obstruct)+sin(ii));
-        Next_celly2_blocked= m_pose.y+12*(sin(angle_obstruct)+cos(ii));
+        Next_cellx2_blocked_left = m_pose.x+12*(cos(angle_of_line)+cos(iii));
+        Next_celly2_blocked_left= m_pose.y+12*(sin(angle_of_line)+sin(iii));
         
-      
-        m_partition.worldToGrid(Next_cellx_blocked,Next_celly_blocked,lNext_cell,kNext_cell);
-        m_partition.worldToGrid(Next_cellx2_blocked,Next_celly2_blocked,lNext_cell2,kNext_cell2);
-        i += angle_change;// change the speed at which it changes the angle it looks at
+        m_partition.worldToGrid(Next_cellx_blocked_left,Next_celly_blocked_left,lNext_cell_left,kNext_cell_left);
+        m_partition.worldToGrid(Next_cellx2_blocked_left,Next_celly2_blocked_left,lNext_cell2_left,kNext_cell2_left);
+
+        i += angle_change;
       }
-      xNext = Next_cellx_blocked;//Nextxx; // could also use the grid to avoid the obstacle
-      yNext=  Next_celly_blocked;//Nextyy;
+      while (m_partition.getCellStatus(lNext_cell_left,kNext_cell_left) == PartitionBinn::Blocked || m_partition.getCellStatus(lNext_cell2_left,kNext_cell2_left) == PartitionBinn::Blocked);
+      // Decide to turn left or right here
+      if (ii <= abs(iii))
+      {
+        lNext_cell= lNext_cell_right; // The 
+        kNext_cell = kNext_cell_right;
+      }
+      else{
+        lNext_cell= lNext_cell_left;
+        kNext_cell = kNext_cell_left;
+      }
+      double Nextpointx, Nextpointy;
+      m_partition.gridToWorld(lNext_cell,kNext_cell,Nextpointx,Nextpointy);
+      xNext = Nextpointx;//Nextxx; // could also use the grid to avoid the obstacle
+      yNext=  Nextpointy;//Nextyy;
       double yawNeeded2;
       m_dubin.getTargetHeading(m_pose.x, m_pose.y, m_pose.yaw, xNext,
                                 yNext, yawNeeded2);
       yawNext = yawNeeded2;
+  
   }
 }
 
