@@ -5,17 +5,23 @@
   <!-- Load definition of simple_box -->
   <xacro:include filename="$(find usv_worlds)/worlds/simple_box.xacro" />
   
-  <xacro:macro name="Obstacle_path">
+  <xacro:macro name="Obstacle_Path">
     <!--  Boxes to do static avoidance -->
     <xacro:simple_box name="box_1" x="20" y="10" X="42" Y="2" Z="2" />
     <xacro:simple_box name="box_2" x="30" y="-10" X="62" Y="2" Z="2" />
     <xacro:simple_box name="box_3" x="40" y="30" X="2" Y="40" Z="2" />
     <xacro:simple_box name="box_4" x="60" y="10" X="2" Y="40" Z="2" />
-    <xacro:simple_box name="box_5" x="80" y="50" X="82" Y="2" Z="1" />
-    <xacro:simple_box name="box_6" x="80" y="30" X="42" Y="2" Z="1" />
+    <xacro:simple_box name="box_5" x="75" y="50" X="72" Y="2" Z="1" />
+    <xacro:simple_box name="box_6" x="85" y="30" X="52" Y="2" Z="1" />
 
+    <!-- borders of the whole box-->
+    <xacro:simple_box name="box_north" x="111" y="20" Y="62" />
+    <xacro:simple_box name="box_south" x="-1" y="20" Y="62" />
+    <xacro:simple_box name="box_east" x="55" y="-11" X="112" />
+    <xacro:simple_box name="box_west" x="55" y="51" X="112" />
 
   </xacro:macro>
+
  
 </world>
 

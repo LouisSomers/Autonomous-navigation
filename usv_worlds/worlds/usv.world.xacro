@@ -39,8 +39,16 @@
       <uri>model://ocean</uri>
     </include>
 
-    <xacro:include filename="$(find usv_worlds)/worlds/simple_obstacles.xacro" />
-    <xacro:simple_obstacles />
+
+    <!-- Some simple obstacles in the way-->
+
+    <!--<xacro:include filename="$(find usv_worlds)/worlds/simple_obstacles.xacro" />
+    <xacro:simple_obstacles /> -->
+
+    <!-- simple trajectory to navigate between walls-->
+
+    <xacro:include filename="$(find usv_worlds)/worlds/Obstacle_Path.xacro" />
+    <xacro:Obstacle_Path />
     
   </world>
 </sdf>
