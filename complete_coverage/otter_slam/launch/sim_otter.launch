@@ -7,7 +7,7 @@
   <include file="$(find otter_gazebo)/launch/localization.launch" />
 
   <!-- Start the cartographer node. This node does SLAM. -->
-  <node name="cartographer_node" pkg="cartographer_ros"
+   <node name="cartographer_node" pkg="cartographer_ros"
         type="cartographer_node" args="
         -configuration_directory $(find otter_slam)/config
         -configuration_basename sim_otter.lua"
@@ -17,8 +17,17 @@
         <remap from="odom" to="odom" />
   </node>
 
-  <!-- Visualize SLAM in rviz -->
+<!-- added the datmo file-->
+  <!--<include file="/home/louis/catkin_ws/src/datmo_master/launch/datmo.launch" />-->
+
+
+ <!-- Visualize SLAM in rviz -->
   <node name="rviz" pkg="rviz" type="rviz" required="true"
         args="-d $(find otter_slam)/config/slam.rviz" if="$(arg rviz)" />
+
+  <!-- adding the detection and tracking of dynamic obstacles this is from the datmo_master-->
+
+
+
 
 </launch>
