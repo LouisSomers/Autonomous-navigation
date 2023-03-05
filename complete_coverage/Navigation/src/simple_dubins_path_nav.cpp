@@ -1,21 +1,22 @@
-#include <coverage_binn/simple_dubins_path.h>
+#include <Navigation/simple_dubins_path_nav.h>
 #include <nav_msgs/Path.h>
 #include <tf/tf.h>
+
 #include <cmath>
 
-namespace coverage_binn
+namespace Navigation
 {
 
 const double epsilon = std::numeric_limits<double>::epsilon();
 
-SimpleDubinsPath::SimpleDubinsPath()
+SimplDubinsPathnav::SimplDubinsPathnav()
     : m_turningRadius(2.5), m_pathResolution(0.20)
 {
 }
 
-SimpleDubinsPath::~SimpleDubinsPath() {}
+SimplDubinsPathnav::~SimplDubinsPathnav() {}
 
-SimpleDubinsPath::Dir SimpleDubinsPath::turningDirection(double x_q, double y_q,
+SimplDubinsPathnav::Dir SimplDubinsPathnav::turningDirection(double x_q, double y_q,
                                                          double theta_q,
                                                          double x_n, double y_n)
 // Note: Prefers right turns when doing 180 turn (or going straight)
@@ -31,7 +32,7 @@ SimpleDubinsPath::Dir SimpleDubinsPath::turningDirection(double x_q, double y_q,
   return turningDirection;
 }
 
-void SimpleDubinsPath::turningCenter(double x_q, double y_q, double theta_q,
+void SimplDubinsPathnav::turningCenter(double x_q, double y_q, double theta_q,
                                      double& x_cr, double& y_cr, Dir dir)
 // Note: For compliance with previous assumption,
 // must prefer right turns when doing 180 turn (or going straight)
@@ -73,7 +74,7 @@ void SimpleDubinsPath::turningCenter(double x_q, double y_q, double theta_q,
   }
 }
 
-void SimpleDubinsPath::tangentLine(double x_n, double y_n, double x_cr,
+void SimplDubinsPathnav::tangentLine(double x_n, double y_n, double x_cr,
                                    double y_cr, double& beta1, double& beta2)
 {
   double a = (x_cr - x_n);
@@ -109,7 +110,7 @@ void SimpleDubinsPath::tangentLine(double x_n, double y_n, double x_cr,
   }
 }
 
-void SimpleDubinsPath::tangentPoint(double x_q, double y_q, double x_n,
+void SimplDubinsPathnav::tangentPoint(double x_q, double y_q, double x_n,
                                     double y_n, double x_cr, double y_cr,
                                     double beta1, double beta2, Dir dir,
                                     double& x_lc, double& y_lc)
@@ -191,7 +192,7 @@ void SimpleDubinsPath::tangentPoint(double x_q, double y_q, double x_n,
   }
 }
 
-void SimpleDubinsPath::generatePath(double x_q, double y_q, double x_n,
+void SimplDubinsPathnav::generatePath(double x_q, double y_q, double x_n,
                                     double y_n, double x_cr, double y_cr,
                                     double x_lc, double y_lc, Dir dir,
                                     const geometry_msgs::PoseStamped& goal,
@@ -265,7 +266,7 @@ void SimpleDubinsPath::generatePath(double x_q, double y_q, double x_n,
   path.poses.push_back(goal);
 }
 
-bool SimpleDubinsPath::makePath(const geometry_msgs::PoseStamped& start,
+bool SimplDubinsPathnav::makePath(const geometry_msgs::PoseStamped& start,
                                 const geometry_msgs::PoseStamped& goal,
                                 nav_msgs::Path& path)
 {
@@ -315,7 +316,7 @@ bool SimpleDubinsPath::makePath(const geometry_msgs::PoseStamped& start,
   return true;
 }
 
-bool SimpleDubinsPath::getTargetHeading(double x_q, double y_q, double theta_q,
+bool SimplDubinsPathnav::getTargetHeading(double x_q, double y_q, double theta_q,
                                         double x_n, double y_n,
                                         double& yawTarget)
 {
@@ -344,4 +345,4 @@ bool SimpleDubinsPath::getTargetHeading(double x_q, double y_q, double theta_q,
   return true;
 }
 
-} // namespace coverage_binn
+} // namespace Navigation

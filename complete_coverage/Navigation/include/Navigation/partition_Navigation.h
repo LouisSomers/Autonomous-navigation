@@ -1,11 +1,11 @@
-#ifndef PARTITION_BINN_H_
-#define PARTITION_BINN_H_
+#ifndef PARTITION_NAV_H_
+#define PARTITION_NAV_H_
 
 #include <nav_msgs/OccupancyGrid.h>
 #include <ros/ros.h>
 #include <vector>
 
-class PartitionBinn {
+class Partition_nav {
  public:
   enum CellStatus { Unknown, Free, Blocked };
 
@@ -19,8 +19,8 @@ class PartitionBinn {
     int l;
     int k;
   };
-  PartitionBinn();
-  PartitionBinn(ros::NodeHandle nh);
+  Partition_nav();
+  Partition_nav(ros::NodeHandle nh);
 
   void initialize(double x0, double y0, double x1, double y1, double rc,
                   double scanRange);
