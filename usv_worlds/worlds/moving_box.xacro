@@ -1,6 +1,5 @@
-<!-- built from https://classic.gazebosim.org/tutorials?tut=actor&cat=build_robo -->
-
 <?xml version="1.0" ?>
+<!-- built from https://classic.gazebosim.org/tutorials?tut=actor&cat=build_robo -->
 <sdf version="1.6">
    <world xmlns:xacro="http://ros.org/wiki/xacro">
       <xacro:macro name="moving_box" params="name x:=0 y:=0 z:=1">
