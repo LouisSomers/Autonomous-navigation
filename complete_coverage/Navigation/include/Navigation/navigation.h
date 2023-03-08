@@ -43,7 +43,7 @@ class Navigation {
   };
 
   bool m_mapInitialized;
-  Partition_nav m_partition;
+  Partition_nav Partition_usv;
   Pose m_pose;
 
   // Partition
@@ -63,7 +63,7 @@ class Navigation {
   // Params
   double m_circleAcceptance = 1.0;
 
-  coverage_binn::SimpleDubinsPath m_dubin;
+  navigation::SimpleDubinsPathnav m_dubin;
 
   ros::Publisher m_goalPub;
   ros::Publisher m_dubinPub;

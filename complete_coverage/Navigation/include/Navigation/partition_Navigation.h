@@ -5,7 +5,7 @@
 #include <ros/ros.h>
 #include <vector>
 
-class Partition_nav {
+class Partition_nav{
  public:
   enum CellStatus { Unknown, Free, Blocked };
 

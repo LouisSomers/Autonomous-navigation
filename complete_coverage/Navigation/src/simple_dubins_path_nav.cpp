@@ -4,19 +4,19 @@
 
 #include <cmath>
 
-namespace Navigation
+namespace navigation
 {
 
 const double epsilon = std::numeric_limits<double>::epsilon();
 
-SimplDubinsPathnav::SimplDubinsPathnav()
+SimpleDubinsPathnav::SimpleDubinsPathnav()
     : m_turningRadius(2.5), m_pathResolution(0.20)
 {
 }
 
-SimplDubinsPathnav::~SimplDubinsPathnav() {}
+SimpleDubinsPathnav::~SimpleDubinsPathnav() {}
 
-SimplDubinsPathnav::Dir SimplDubinsPathnav::turningDirection(double x_q, double y_q,
+SimpleDubinsPathnav::Dir SimpleDubinsPathnav::turningDirection(double x_q, double y_q,
                                                          double theta_q,
                                                          double x_n, double y_n)
 // Note: Prefers right turns when doing 180 turn (or going straight)
@@ -32,7 +32,7 @@ SimplDubinsPathnav::Dir SimplDubinsPathnav::turningDirection(double x_q, double 
   return turningDirection;
 }
 
-void SimplDubinsPathnav::turningCenter(double x_q, double y_q, double theta_q,
+void SimpleDubinsPathnav::turningCenter(double x_q, double y_q, double theta_q,
                                      double& x_cr, double& y_cr, Dir dir)
 // Note: For compliance with previous assumption,
 // must prefer right turns when doing 180 turn (or going straight)
@@ -74,7 +74,7 @@ void SimplDubinsPathnav::turningCenter(double x_q, double y_q, double theta_q,
   }
 }
 
-void SimplDubinsPathnav::tangentLine(double x_n, double y_n, double x_cr,
+void SimpleDubinsPathnav::tangentLine(double x_n, double y_n, double x_cr,
                                    double y_cr, double& beta1, double& beta2)
 {
   double a = (x_cr - x_n);
@@ -110,7 +110,7 @@ void SimplDubinsPathnav::tangentLine(double x_n, double y_n, double x_cr,
   }
 }
 
-void SimplDubinsPathnav::tangentPoint(double x_q, double y_q, double x_n,
+void SimpleDubinsPathnav::tangentPoint(double x_q, double y_q, double x_n,
                                     double y_n, double x_cr, double y_cr,
                                     double beta1, double beta2, Dir dir,
                                     double& x_lc, double& y_lc)
@@ -192,7 +192,7 @@ void SimplDubinsPathnav::tangentPoint(double x_q, double y_q, double x_n,
   }
 }
 
-void SimplDubinsPathnav::generatePath(double x_q, double y_q, double x_n,
+void SimpleDubinsPathnav::generatePath(double x_q, double y_q, double x_n,
                                     double y_n, double x_cr, double y_cr,
                                     double x_lc, double y_lc, Dir dir,
                                     const geometry_msgs::PoseStamped& goal,
@@ -266,7 +266,7 @@ void SimplDubinsPathnav::generatePath(double x_q, double y_q, double x_n,
   path.poses.push_back(goal);
 }
 
-bool SimplDubinsPathnav::makePath(const geometry_msgs::PoseStamped& start,
+bool SimpleDubinsPathnav::makePath(const geometry_msgs::PoseStamped& start,
                                 const geometry_msgs::PoseStamped& goal,
                                 nav_msgs::Path& path)
 {
@@ -316,7 +316,7 @@ bool SimplDubinsPathnav::makePath(const geometry_msgs::PoseStamped& start,
   return true;
 }
 
-bool SimplDubinsPathnav::getTargetHeading(double x_q, double y_q, double theta_q,
+bool SimpleDubinsPathnav::getTargetHeading(double x_q, double y_q, double theta_q,
                                         double x_n, double y_n,
                                         double& yawTarget)
 {

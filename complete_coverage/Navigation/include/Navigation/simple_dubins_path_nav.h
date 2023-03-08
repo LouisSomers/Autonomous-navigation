@@ -9,11 +9,11 @@
 namespace navigation
 {
 
-class SimplDubinsPathnav
+class SimpleDubinsPathnav
 {
 public:
-  SimplDubinsPathnav();
-  ~SimplDubinsPathnav();
+  SimpleDubinsPathnav();
+  ~SimpleDubinsPathnav();
 
   bool makePath(const geometry_msgs::PoseStamped& start,
                 const geometry_msgs::PoseStamped& goal, nav_msgs::Path& path);
