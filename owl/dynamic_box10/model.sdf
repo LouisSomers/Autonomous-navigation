@@ -1,0 +1,41 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="dynamic_box10">
+    <pose>0 0 0  0 0 0</pose>
+    <static>true</static>
+    <link name="link">
+
+
+      <collision name="collision">
+        <geometry>
+          <box>
+              <size>3 3 3</size>
+          </box>
+        </geometry>
+	<surface>
+          <contact>
+            <ode>
+              <max_vel>0.1</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://dynamic_box10/meshes/dynamic_box.dae</uri>
+          </mesh>
+	      </geometry>
+      </visual>
+    </link>
+    <plugin name="dynamic_target_plugin" filename="libMRSGazeboDynamicModelPlugin.so">
+       <update_rate>30</update_rate>
+       <initial_on>true</initial_on>
+       <trajectory_file>straight_trajectory_y_10.txt</trajectory_file>
+       <loop_enabled>true</loop_enabled>
+       <use_segmentation>true</use_segmentation>
+       <use_directional_yaw>false</use_directional_yaw>
+     </plugin>
+  </model>
+</sdf>
