@@ -203,9 +203,9 @@ include_directories(
 # catkin_add_nosetests(test)
 
 add_executable(navigation_node
-  include/Navigation/navigation.h
-  include/Navigation/partition_Navigation.h
-  include/Navigation/simple_dubins_path_nav.h
+  include/navigation/navigation.h
+  include/navigation/partition_navigation.h
+  include/navigation/simple_dubins_path_nav.h
   src/navigation_node.cpp
   src/navigation.cpp
   src/partition_nav.cpp

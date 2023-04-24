@@ -1,8 +1,9 @@
 #include <cmath>
-#include <Navigation/navigation.h>
+#include <navigation/navigation.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <tf2/utils.h>
-//#include <Navigation/partition_Navigation.h>
+#include <datmo/Track.h>
+#include <geometry_msgs/Pose.h>
 //
 #include <string>
 //
@@ -20,9 +21,9 @@ double pointDistance(double x0, double y0, double x1, double y1)
   return std::sqrt(std::pow(x1 - x0, 2) + std::pow(y1 - y0, 2));
 }
 
-Navigation::Navigation() : m_mapInitialized(false)
+navigation::navigation() : m_mapInitialized(false)
 {
-  ROS_INFO("Navigation_node started.");
+  ROS_INFO("navigation_node started.");
 
   ros::NodeHandle nh;
   ros::NodeHandle nhP("~");
@@ -37,12 +38,13 @@ Navigation::Navigation() : m_mapInitialized(false)
   m_circleAcceptance = nhP.param("goal_tolerance", 1.0); // set to 3 originally
 
   // Set up partition. TODO: set up with parameters
-  Partition_usv = Partition_nav(nh);
-  Partition_usv.initialize(m_x0, m_y0, m_x1, m_y1, cellRadius, scanRange);
+  m_partition = Partition_nav(nh);
+  m_partition.initialize(m_x0, m_y0, m_x1, m_y1, cellRadius, scanRange);
 
   // Set up subscribers
-  ros::Subscriber mapSub =
-      nh.subscribe("inflated_map", 1000, &Navigation::onMapReceived, this);
+  ros::Subscriber mapSub = nh.subscribe("inflated_map", 1000, &navigation::onMapReceived, this);
+ // ros::Subscriber datmoSub = nh.subscribe("Track",1000, &navigation::datmolive);
+
 
   // Set up publishers
   m_goalPub =
@@ -55,14 +57,21 @@ Navigation::Navigation() : m_mapInitialized(false)
   mainLoop(nh);
 }
 
-void Navigation::onMapReceived(const nav_msgs::OccupancyGrid& grid)
+//void navigation::datmolive(const datmo::Track::ConstPtr& data,double& x_moving,double& id_moving)
+//{
+  //id_moving = data->id;
+  //x_moving = msg_track_box_kf.odom.pose.pose.position.x;
+//}
+
+
+void navigation::onMapReceived(const nav_msgs::OccupancyGrid& grid)
 {
   if (!m_mapInitialized)
     m_mapInitialized = true;
-  Partition_usv.update(grid, m_pose.x, m_pose.y);
+  m_partition.update(grid, m_pose.x, m_pose.y);
 }
 
-void Navigation::mainLoop(ros::NodeHandle& nh)
+void navigation::mainLoop(ros::NodeHandle& nh)
 {
   // Set up tf2 transform listener
   tf2_ros::Buffer tfBuffer;
@@ -96,7 +105,7 @@ void Navigation::mainLoop(ros::NodeHandle& nh)
   }
 }
 
-bool Navigation::updateRobotPose(const tf2_ros::Buffer& tfBuffer)
+bool navigation::updateRobotPose(const tf2_ros::Buffer& tfBuffer)
 {
   geometry_msgs::TransformStamped tfStamped;
   try
@@ -119,13 +128,13 @@ bool Navigation::updateRobotPose(const tf2_ros::Buffer& tfBuffer)
   return true;
 }
 
-void Navigation::BINN()
+void navigation::BINN()
 {
   double xTarget, yTarget;
   int lTarget, kTarget;
-  xTarget=80;
-  yTarget=40;
-  Partition_usv.worldToGrid(xTarget, yTarget, lTarget, kTarget);
+  xTarget=60;
+  yTarget=0;
+  m_partition.worldToGrid(xTarget, yTarget, lTarget, kTarget);
 
   if (!m_mapInitialized)
     return;
@@ -133,7 +142,7 @@ void Navigation::BINN()
   // Are we finished?
   // TODO: check for free, uncovered cells
   bool IsWaypointCovered;
-  Partition_usv.nextWaypointNeeded(lTarget, kTarget, IsWaypointCovered);
+  m_partition.nextWaypointNeeded(lTarget, kTarget, IsWaypointCovered);
   if (IsWaypointCovered == true)
   {
     ROS_INFO("Waypoint Reached ask Next waypoint");
@@ -154,16 +163,16 @@ void Navigation::BINN()
 
   // Find current position ( the current cell not the exact position)
   int l_current, k_current;
-  Partition_usv.worldToGrid(m_pose.x, m_pose.y, l_current, k_current);
+  m_partition.worldToGrid(m_pose.x, m_pose.y, l_current, k_current);
   double xCurrent, yCurrent;
-  Partition_usv.gridToWorld(l_current, k_current, xCurrent, yCurrent); // center of the circle
+  m_partition.gridToWorld(l_current, k_current, xCurrent, yCurrent); // center of the circle
   // Set current cell as covered, if we pass even a little in it 
   // In that way we know how he navigates
   double cellRadius = 2.5;
   if (pointDistance(m_pose.x, m_pose.y, xCurrent, yCurrent) <
       cellRadius)
   {
-    Partition_usv.setCellCovered(l_current, k_current, true);
+    m_partition.setCellCovered(l_current, k_current, true);
   }
 
   publishGoal(xNext,yNext,yawNext);
@@ -177,16 +186,16 @@ void Navigation::BINN()
 
 
 // THIS WORKS NOW ADAPT IT TO AVOID THE OBSTACLE
-void Navigation::findNextTargetWaypoint(double& xTarget, double& yTarget, double& xNext, double& yNext, double& yawNext, double& DistanceToTarget)
+void navigation::findNextTargetWaypoint(double& xTarget, double& yTarget, double& xNext, double& yNext, double& yawNext, double& DistanceToTarget)
 {
   // Get cell position HERE THE CELLS ARE FOUND FOR THE NEXT WAYPOINT
   double angle_change;
   angle_change = 5; // turns always right now check if left is a better option and decide on which way to turn then
   int l, k;
-  Partition_usv.worldToGrid(m_pose.x, m_pose.y, l, k);
+  m_partition.worldToGrid(m_pose.x, m_pose.y, l, k);
   // Get Target position and the cell of the target position
   int lTarget,kTarget;
-  Partition_usv.worldToGrid(xTarget,yTarget,lTarget,kTarget);
+  m_partition.worldToGrid(xTarget,yTarget,lTarget,kTarget);
   double DistanceToTargetX,DistanceToTargetY;
   DistanceToTargetX = m_pose.x-xTarget;
   DistanceToTargetY = m_pose.y-yTarget;
@@ -222,11 +231,11 @@ void Navigation::findNextTargetWaypoint(double& xTarget, double& yTarget, double
   Next_celly2 = m_pose.y+12*sin(angle_of_line);
 
   int lNext_cell, kNext_cell, lNext_cell2, kNext_cell2;
-  Partition_usv.worldToGrid(Next_cellx,Next_celly,lNext_cell,kNext_cell);
-  Partition_usv.worldToGrid(Next_cellx2,Next_celly2,lNext_cell2,kNext_cell2);
+  m_partition.worldToGrid(Next_cellx,Next_celly,lNext_cell,kNext_cell);
+  m_partition.worldToGrid(Next_cellx2,Next_celly2,lNext_cell2,kNext_cell2);
 
   // iIf there are no obstacles the USV moves further towards the target
-  if (Partition_usv.getCellStatus(lNext_cell,kNext_cell) == Partition_nav::Free && Partition_usv.getCellStatus(lNext_cell2,kNext_cell2) == Partition_nav::Free)
+  if (m_partition.getCellStatus(lNext_cell,kNext_cell) == Partition_nav::Free && m_partition.getCellStatus(lNext_cell2,kNext_cell2) == Partition_nav::Free)
   { 
     xNext = xTarget;
     yNext = yTarget;
@@ -254,12 +263,12 @@ void Navigation::findNextTargetWaypoint(double& xTarget, double& yTarget, double
         Next_cellx2_blocked_right = m_pose.x+12*(cos(angle_of_line)+cos(ii));
         Next_celly2_blocked_right= m_pose.y+12*(sin(angle_of_line)+sin(ii));
         
-        Partition_usv.worldToGrid(Next_cellx_blocked_right,Next_celly_blocked_right,lNext_cell_right,kNext_cell_right);
-        Partition_usv.worldToGrid(Next_cellx2_blocked_right,Next_celly2_blocked_right,lNext_cell2_right,kNext_cell2_right);
+        m_partition.worldToGrid(Next_cellx_blocked_right,Next_celly_blocked_right,lNext_cell_right,kNext_cell_right);
+        m_partition.worldToGrid(Next_cellx2_blocked_right,Next_celly2_blocked_right,lNext_cell2_right,kNext_cell2_right);
 
         i += angle_change;
       }
-      while (Partition_usv.getCellStatus(lNext_cell_right,kNext_cell_right) == Partition_nav::Blocked || Partition_usv.getCellStatus(lNext_cell2_right,kNext_cell2_right) == Partition_nav::Blocked);
+      while (m_partition.getCellStatus(lNext_cell_right,kNext_cell_right) == Partition_nav::Blocked || m_partition.getCellStatus(lNext_cell2_right,kNext_cell2_right) == Partition_nav::Blocked);
       //left while loop
       i = 0;
       int lNext_cell_left,kNext_cell_left;
@@ -273,12 +282,12 @@ void Navigation::findNextTargetWaypoint(double& xTarget, double& yTarget, double
         Next_cellx2_blocked_left = m_pose.x+12*(cos(angle_of_line)+cos(iii));
         Next_celly2_blocked_left= m_pose.y+12*(sin(angle_of_line)+sin(iii));
         
-        Partition_usv.worldToGrid(Next_cellx_blocked_left,Next_celly_blocked_left,lNext_cell_left,kNext_cell_left);
-        Partition_usv.worldToGrid(Next_cellx2_blocked_left,Next_celly2_blocked_left,lNext_cell2_left,kNext_cell2_left);
+        m_partition.worldToGrid(Next_cellx_blocked_left,Next_celly_blocked_left,lNext_cell_left,kNext_cell_left);
+        m_partition.worldToGrid(Next_cellx2_blocked_left,Next_celly2_blocked_left,lNext_cell2_left,kNext_cell2_left);
 
         i += angle_change;
       }
-      while (Partition_usv.getCellStatus(lNext_cell_left,kNext_cell_left) == Partition_nav::Blocked || Partition_usv.getCellStatus(lNext_cell2_left,kNext_cell2_left) == Partition_nav::Blocked);
+      while (m_partition.getCellStatus(lNext_cell_left,kNext_cell_left) == Partition_nav::Blocked || m_partition.getCellStatus(lNext_cell2_left,kNext_cell2_left) == Partition_nav::Blocked);
       // Decide to turn left or right here
       if (ii <= abs(iii))
       {
@@ -290,7 +299,7 @@ void Navigation::findNextTargetWaypoint(double& xTarget, double& yTarget, double
         kNext_cell = kNext_cell_left;
       }
       double Nextpointx, Nextpointy;
-      Partition_usv.gridToWorld(lNext_cell,kNext_cell,Nextpointx,Nextpointy);
+      m_partition.gridToWorld(lNext_cell,kNext_cell,Nextpointx,Nextpointy);
       xNext = Nextpointx;//Nextxx; // could also use the grid to avoid the obstacle
       yNext=  Nextpointy;//Nextyy;
       double yawNeeded2;
@@ -301,11 +310,11 @@ void Navigation::findNextTargetWaypoint(double& xTarget, double& yTarget, double
   }
 }
 
-//void Navigation::driftthroughwind()
+//void navigation::driftthroughwind()
 // based on the wind it is possible that the course to steer must be adapted
-//void Navigation::setNextWaypoint(double& xTarget, double& yTarget double& XNextwaypoint, double& YnextWaypoint)
+//void navigation::setNextWaypoint(double& xTarget, double& yTarget double& XNextwaypoint, double& YnextWaypoint)
 
-double Navigation::calculateI(Partition_nav::CellStatus status, bool covered,
+double navigation::calculateI(Partition_nav::CellStatus status, bool covered,
                                 double x, double y)
 {
   // Scaling factor for target priorities: 0 < lambda <= 1
@@ -328,7 +337,7 @@ double Navigation::calculateI(Partition_nav::CellStatus status, bool covered,
   }
 }
 
-double Navigation::calculateWeightSum(int l, int k)
+double navigation::calculateWeightSum(int l, int k)
 {
   std::vector<Partition_nav::Point> neighbors;
   getNeighbors2(l, k, neighbors);
@@ -336,31 +345,31 @@ double Navigation::calculateWeightSum(int l, int k)
   double weightSum = 0.0;
   for (auto nb : neighbors)
   {
-    if (nb.l < 1 || nb.l > Partition_usv.getCells().size() || nb.k < 1 ||
-        nb.k > Partition_usv.getCells()[nb.l - 1].size())
+    if (nb.l < 1 || nb.l > m_partition.getCells().size() || nb.k < 1 ||
+        nb.k > m_partition.getCells()[nb.l - 1].size())
     {
       continue;
     }
 
     weightSum += calculateWeight(l, k, nb.l, nb.k) *
-                 std::max(Partition_usv.getCellValue(nb.l, nb.k), 0.0);
+                 std::max(m_partition.getCellValue(nb.l, nb.k), 0.0);
   }
 
   return weightSum;
 }
 
 // TODO: can be calculated offline and stored
-double Navigation::calculateWeight(int l0, int k0, int l1, int k1)
+double navigation::calculateWeight(int l0, int k0, int l1, int k1)
 {
   double x0, y0;
-  Partition_usv.gridToWorld(l0, k0, x0, y0);
+  m_partition.gridToWorld(l0, k0, x0, y0);
   double x1, y1;
-  Partition_usv.gridToWorld(l1, k1, x1, y1);
+  m_partition.gridToWorld(l1, k1, x1, y1);
 
   return m_mu / std::sqrt(std::pow(x1 - x0, 2) + std::pow(y1 - y0, 2));
 }
 
-void Navigation::getNeighbors(int l, int k,
+void navigation::getNeighbors(int l, int k,
                                 std::vector<Partition_nav::Point>& neighbors)
 {
   neighbors.push_back({l + 1, k});
@@ -385,7 +394,7 @@ void Navigation::getNeighbors(int l, int k,
   }
 }
 
-void Navigation::getNeighbors2(int l, int k,
+void navigation::getNeighbors2(int l, int k,
                                  std::vector<Partition_nav::Point>& neighbors)
 {
   neighbors.push_back({l + 1, k});
@@ -404,11 +413,11 @@ void Navigation::getNeighbors2(int l, int k,
   }
 }
 
-void Navigation::findNextCell(int& lNext, int& kNext, double& yawNext)
+void navigation::findNextCell(int& lNext, int& kNext, double& yawNext)
 {
   // Get cell position HERE THE CELLS ARE FOUND FOR THE NEXT WAYPOINT
   int l, k;
-  Partition_usv.worldToGrid(m_pose.x, m_pose.y, l, k);
+  m_partition.worldToGrid(m_pose.x, m_pose.y, l, k);
 
   // Next pos has to be among the neighbors
   std::vector<Partition_nav::Point> neighbors;
@@ -422,20 +431,20 @@ void Navigation::findNextCell(int& lNext, int& kNext, double& yawNext)
   double maxScore = std::numeric_limits<double>::lowest();
   for (auto nb : neighbors)
   {
-    if (nb.l < 1 || nb.l > Partition_usv.getCells().size() || nb.k < 1 ||
-        nb.k > Partition_usv.getCells()[nb.l - 1].size())
+    if (nb.l < 1 || nb.l > m_partition.getCells().size() || nb.k < 1 ||
+        nb.k > m_partition.getCells()[nb.l - 1].size())
     {
       continue;
     }
 
     // Current cell position
     double xCurrent, yCurrent;
-    Partition_usv.gridToWorld(l, k, xCurrent, yCurrent);
+    m_partition.gridToWorld(l, k, xCurrent, yCurrent);
 
     // Target position
     
     double xTarget, yTarget;
-    Partition_usv.gridToWorld(nb.l, nb.k, xTarget, yTarget);
+    m_partition.gridToWorld(nb.l, nb.k, xTarget, yTarget);
 
     // Target reachable?
     double yawTarget;
@@ -443,7 +452,7 @@ void Navigation::findNextCell(int& lNext, int& kNext, double& yawNext)
                                  yTarget, yawTarget))
     {
       // Get the score
-      double score = scoreFunction(Partition_usv.getCellValue(nb.l, nb.k),
+      double score = scoreFunction(m_partition.getCellValue(nb.l, nb.k),
                                    m_pose.yaw, yawTarget);
       if (score > maxScore)
       {
@@ -459,7 +468,7 @@ void Navigation::findNextCell(int& lNext, int& kNext, double& yawNext)
 }
 
 
-double Navigation::scoreFunction(double neuralActivity, double yaw,
+double navigation::scoreFunction(double neuralActivity, double yaw,
                                    double targetYaw)
 {
   if (yaw < 0)
@@ -475,9 +484,9 @@ double Navigation::scoreFunction(double neuralActivity, double yaw,
 }
 
 
-void Navigation::evolveNeuralNetwork(double deltaTime)
+void navigation::evolveNeuralNetwork(double deltaTime)
 {
-  auto cells = Partition_usv.getCells();
+  auto cells = m_partition.getCells();
 
   for (int l = 1; l <= cells.size(); l++)
   {
@@ -485,25 +494,25 @@ void Navigation::evolveNeuralNetwork(double deltaTime)
     for (int k = 1; k <= column.size(); k++)
     {
       double xCell, yCell;
-      Partition_usv.gridToWorld(l, k, xCell, yCell);
-      double I = calculateI(Partition_usv.getCellStatus(l, k),
-                            Partition_usv.isCellCovered(l, k), xCell, yCell);
+      m_partition.gridToWorld(l, k, xCell, yCell);
+      double I = calculateI(m_partition.getCellStatus(l, k),
+                            m_partition.isCellCovered(l, k), xCell, yCell);
 
       double weightSum = calculateWeightSum(l, k);
 
-      double x = Partition_usv.getCellValue(l, k);
+      double x = m_partition.getCellValue(l, k);
 
       double xDot = -m_A * x + (m_B - x) * (std::max(I, 0.0) + weightSum) -
                     (m_D + x) * std::max(-I, 0.0);
 
       x += xDot * deltaTime;
-      Partition_usv.setCellValue(l, k, x);
+      m_partition.setCellValue(l, k, x);
     }
   }
 }
 
 
-void Navigation::publishGoal(double x, double y, double yaw)
+void navigation::publishGoal(double x, double y, double yaw)
 {
   // Publish goal
   geometry_msgs::PoseStamped goalPose;

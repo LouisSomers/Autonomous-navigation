@@ -1,11 +1,11 @@
-#include <Navigation/navigation.h>
+#include <navigation/navigation.h>
 
 int main(int argc, char *argv[]) {
-  ros::init(argc, argv, "Navigation");
+  ros::init(argc, argv, "navigation");
 
   ros::NodeHandle n;
 
-  Navigation NavigationNode;
+  navigation navigationNode;
 
   ros::spin();
 

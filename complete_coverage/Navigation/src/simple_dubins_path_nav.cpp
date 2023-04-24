@@ -1,10 +1,10 @@
-#include <Navigation/simple_dubins_path_nav.h>
+#include <navigation/simple_dubins_path_nav.h>
 #include <nav_msgs/Path.h>
 #include <tf/tf.h>
 
 #include <cmath>
 
-namespace navigation
+namespace navigation_Dubins
 {
 
 const double epsilon = std::numeric_limits<double>::epsilon();
