@@ -1,5 +1,5 @@
 #include <cmath>
-#include <Navigation/partition_Navigation.h>
+#include <navigation/partition_navigation.h>
 #include <visualization_msgs/MarkerArray.h>
 
 Partition_nav::Partition_nav() {}
