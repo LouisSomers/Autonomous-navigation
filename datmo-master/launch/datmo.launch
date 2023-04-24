@@ -1,11 +1,16 @@
  <launch>
 
  <node pkg="datmo" type="datmo" name="datmo" output="screen">
-  <param name="lidar_frame" value="laser" />
-  <param name="world_frame" value="laser" />
+  <param name="lidar_frame" value="lidar_link" />
+  <param name="world_frame" value="map" />
   <param name="threshold_distance" value="0.2" />
   <param name="euclidean_distance" value="0.25" />
   <param name="pub_markers" value="true" />
+
+
  </node>
-    
+ 
+ <!--<node name="rviz" pkg="rviz" type="rviz" required="true"
+        args= "-d home/louis/catkin_ws/src/datmo_master/config/default.rviz" /> -->
+
 </launch>

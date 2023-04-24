@@ -43,10 +43,11 @@ Datmo::Datmo(){
   n_private.param("max_cluster_size", max_cluster_size, 360);
   n_private.param("euclidean_distance", euclidean_distance, 0.25);
   n_private.param("pub_markers", p_marker_pub, false);
+ // n_private.param("queue_positions", queue_positions, 10);
 
   pub_tracks_box_kf     = n.advertise<datmo::TrackArray>("datmo/box_kf", 10);
   pub_marker_array   = n.advertise<visualization_msgs::MarkerArray>("datmo/marker_array", 10);
-  sub_scan = n.subscribe("/scan", 1, &Datmo::callback, this);
+  sub_scan = n.subscribe("/filtered_scan", 1, &Datmo::callback, this);
 
 }
 
@@ -173,6 +174,7 @@ void Datmo::callback(const sensor_msgs::LaserScan::ConstPtr& scan_in){
       if (p_marker_pub){
         marker_array.markers.push_back(clusters[i].getClosestCornerPointVisualisationMessage());
         marker_array.markers.push_back(clusters[i].getBoundingBoxCenterVisualisationMessage());
+
         marker_array.markers.push_back(clusters[i].getArrowVisualisationMessage());
         marker_array.markers.push_back(clusters[i].getThetaL1VisualisationMessage());
         marker_array.markers.push_back(clusters[i].getThetaL2VisualisationMessage());
