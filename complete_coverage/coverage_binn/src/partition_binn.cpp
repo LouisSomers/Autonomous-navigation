@@ -1,16 +1,25 @@
 #include <cmath>
 #include <coverage_binn/partition_binn.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <datmo/TrackArray.h>
+
 
 PartitionBinn::PartitionBinn() {}
 
 PartitionBinn::PartitionBinn(ros::NodeHandle nh) : m_initialized(false)
 {
   ROS_INFO("PartitionBinn constructed.");
+  //subscribers not needed
 
+  ros::Subscriber track_pSub = nh.subscribe("datmo/box_kf",10,&PartitionBinn::trackingCenter_p, this);
+ // ros::Subscriber own_posSub = nh.subscribe("startPose")
+  
+  // publishers
   m_nh = nh;
   m_pub = m_nh.advertise<visualization_msgs::MarkerArray>("cell_partition", 1);
 }
+
+
 
 void PartitionBinn::initialize(double x0, double y0, double x1, double y1,
                                double rc, double scanRange)
@@ -74,6 +83,128 @@ void PartitionBinn::initialize(double x0, double y0, double x1, double y1,
   }
   m_cells = cells;
 }
+
+// for the DATMO node but not needed !
+void PartitionBinn::trackingCenter_p(const datmo::TrackArray& track) { track_center = track; }
+
+void PartitionBinn::getTrackedTarget_p(double x, double y,float& track_x, float& track_y,std::vector<double>& trackedX,std::vector<double>& trackedY,std::vector<double>& vel_trackedX,std::vector<double>& vel_trackedY, std::vector<int>& vect_id, std::vector<double>& predX,std::vector<double>& predY){
+  for (unsigned int i =0; i<track_center.tracks.size();i++){
+    double id, vel_x, vel_y;
+    track_x = track_center.tracks[0].odom.pose.pose.position.x;
+    track_y = track_center.tracks[0].odom.pose.pose.position.y;
+    vel_x = track_center.tracks[0].odom.twist.twist.linear.x;
+    vel_y = track_center.tracks[0].odom.twist.twist.linear.y;
+    id = track_center.tracks[0].id;
+    vect_id.push_back(id);
+    trackedX.push_back(track_x);
+    trackedY.push_back(track_y);
+    vel_trackedX.push_back(vel_x);
+    vel_trackedY.push_back(vel_y);
+    int end;
+    end = vect_id.size();
+    double alpha, beta;
+    double teller, noemer;
+    double x_mean, y_mean;
+    double vel_mean, tracked_vel;
+    int queue;
+    vel_mean = 0; tracked_vel = 0; x_mean = 0; y_mean = 0; alpha = 0; beta=0; teller = 0; noemer = 0;
+    queue = 15;
+    bool linear_regression = false;
+    if (linear_regression == true){
+
+   
+      if (vect_id[end-1] == vect_id[end-queue]) {
+        for (int i = 1; i <= queue; i = i + 1){
+          x_mean = x_mean + trackedX[end-i]/queue;
+          y_mean = y_mean + trackedY[end-i]/queue;
+          tracked_vel = sqrt(vel_trackedX[end-i]*vel_trackedX[end-i]+vel_trackedY[end-i]*vel_trackedY[end-i]);
+          vel_mean = vel_mean + tracked_vel/queue;
+
+        }
+        for (int i = 1; i <= queue; i = i + 1){
+          teller = teller + (trackedX[end-i]-x_mean)*(trackedY[end-i]-y_mean);
+          noemer = noemer + (trackedX[end-i]-x_mean)*(trackedX[end-i]-x_mean);
+        }
+        beta = teller/noemer;
+        alpha = y_mean -(beta*x_mean);
+
+    
+      }
+     // ROS_INFO_STREAM("beta and alpha:"<< beta <<"," << alpha);
+     // ROS_INFO_STREAM("id begin and end andd mean velocity:" << vect_id[end-1] << "," <<vect_id[end-queue] << "," << vel_mean);
+    }
+    else{
+      if (vect_id[end-1] == vect_id[end-queue]) {
+        double vel_x_mean, vel_y_mean;
+        vel_x_mean =0;
+        vel_y_mean = 0;
+
+        for (int i = 1; i <= queue; i = i + 1){
+            x_mean = x_mean + trackedX[end-i]/queue;
+            y_mean = y_mean + trackedY[end-i]/queue;
+            vel_x_mean = vel_x_mean+ vel_trackedX[end-i]/queue;
+            vel_y_mean = vel_y_mean + vel_trackedY[end-i]/queue;
+            tracked_vel = sqrt(vel_trackedX[end-i]*vel_trackedX[end-i]+vel_trackedY[end-i]*vel_trackedY[end-i]);
+            vel_mean = vel_mean + tracked_vel/queue;
+
+        }
+      //  ROS_INFO_STREAM("x_mean, y_mean:"<< x_mean <<"," << y_mean);
+      //  ROS_INFO_STREAM("vel_mean:"<< vel_mean);
+
+        predX.clear();
+        predY.clear();
+        double dist_obstacle;
+        dist_obstacle = sqrt((x-x_mean)*(x-x_mean)+(y-y_mean)*(y-y_mean));
+        if (dist_obstacle <= 25 && vel_mean >=0){
+          for (int i = 1; i <= queue; i = i + 1){
+            double predicted_x, predicted_y;
+            predicted_x =x_mean+vel_x_mean*i*4/2;
+            predicted_y =y_mean+vel_y_mean*i*4/2;
+            predX.push_back(predicted_x);
+            predY.push_back(predicted_y);
+          }
+        
+        }
+      ROS_INFO_STREAM("predicted end:"<< predX[14] <<"," << predY[14]);
+  
+      }
+      
+    }
+  
+    // ROS_INFO_STREAM("center_box_position:"<< track_x << "," << track_y << "," << id);
+  }
+
+}
+
+void PartitionBinn::block_cells(double x, double y){
+  
+
+  float track_x, track_y;
+  getTrackedTarget_p(x,y,track_x, track_y,vect_tracked_centerX,vect_tracked_centerY,velX,velY,vect_id_center,predictionsX,predictionsY);
+  if (predictionsX.empty()){
+   // double tttt = track_center.tracks[0].odom.pose.pose.position.x;
+  
+    ROS_INFO_STREAM("Target not found");
+  }
+  else{
+    for (int i = 0; i <= predictionsX.size(); i = i + 1){
+      int l_pred,k_pred;
+      worldToGrid(predictionsX[i],predictionsY[i], l_pred, k_pred);
+      
+      m_cells[l_pred][k_pred].status = Blocked;
+    }
+
+    ROS_INFO_STREAM("Target found");
+
+  }
+
+  
+}
+
+
+
+// end for the datmo 
+
 
 void PartitionBinn::drawPartition()
 {
@@ -169,14 +300,18 @@ void PartitionBinn::update(const nav_msgs::OccupancyGrid& map, double x,
 
   drawPartition();
 
+  
+
   // Current cell
   int l;
   int k;
   worldToGrid(x, y, l, k);
+  //block_cells(x,y);
 
   // Calculate status for all nearby cells
   std::vector<Point> neighbors;
   getNeighbors(l, k, m_scanRange, neighbors);
+ 
   for (auto neighbor : neighbors)
   {
     m_cells[neighbor.l - 1][neighbor.k - 1].status =
@@ -232,11 +367,14 @@ PartitionBinn::calculateStatus(const nav_msgs::OccupancyGrid& map, int l, int k)
         continue;
       }
 
+
       // Any map cell with occupancy probability > 50
       if (map.data[m] > 50)
       {
         return Blocked;
       }
+      
+       
 
       // Any unknown map cell
       if (map.data[m] < 0)
@@ -252,6 +390,9 @@ PartitionBinn::calculateStatus(const nav_msgs::OccupancyGrid& map, int l, int k)
 
   // Partially blocked cell
   if (unknown && getCellStatus(l, k) == Blocked)
+    return Blocked;
+
+  if (predictioncovered(l,k) == true)
     return Blocked;
 
   return Free;

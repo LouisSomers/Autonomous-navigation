@@ -4,15 +4,18 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <ros/ros.h>
 #include <vector>
+#include <datmo/TrackArray.h>
+
 
 class PartitionBinn {
  public:
   enum CellStatus { Unknown, Free, Blocked };
 
   struct Cell {
-    Cell() : isCovered(false), status(Unknown), x(0.0) {}
+    Cell() : isCovered(false), status(Unknown),predicted(false), x(0.0) {}
     bool isCovered;
     CellStatus status;
+    bool predicted;
     double x;  // neural activity
   };
   struct Point {
@@ -25,6 +28,10 @@ class PartitionBinn {
   void initialize(double x0, double y0, double x1, double y1, double rc,
                   double scanRange);
 
+  void trackingCenter_p(const datmo::TrackArray& track);
+  void getTrackedTarget_p(double x, double y,float& track_x, float& track_y,std::vector<double>& trackedX,std::vector<double>& trackedY,std::vector<double>& vel_trackedX,std::vector<double>& vel_trackedY, std::vector<int>& vect_id, std::vector<double>& predX,std::vector<double>& predY);
+  datmo::TrackArray track_center;
+  void block_cells(double x, double y);
   void drawPartition();
 
   void update(const nav_msgs::OccupancyGrid& map, double x, double y);
@@ -35,10 +42,22 @@ class PartitionBinn {
 
   std::vector<std::vector<Cell>> getCells() { return m_cells; }
 
-  // added this below
+  // added this below for DATMO
   
   void nextWaypointNeeded(int l, int k, bool IsCovered){
     m_cells[l][k].isCovered = IsCovered;
+  }
+
+  bool predictioncovered(int l, int k){
+    return m_cells[l][k].predicted;
+  }
+
+  void setpredictioncovered(int l, int k, bool predictor){
+    m_cells[l][k].predicted = predictor;
+  }
+  void setbacktofree(int l, int k){ 
+    m_cells[l][k].predicted = false;
+    m_cells[l][k].status = Free;
   }
 
   //
@@ -55,6 +74,7 @@ class PartitionBinn {
   void setCellCovered(int l, int k, bool isCovered) {
     m_cells[l - 1][k - 1].isCovered = isCovered;
   }
+
 
   bool isCellCovered(int l, int k) { return m_cells[l - 1][k - 1].isCovered; }
 
@@ -91,6 +111,8 @@ class PartitionBinn {
 
   ros::NodeHandle m_nh;
   ros::Publisher m_pub;
+  
+
 
   bool m_initialized;
 
@@ -108,6 +130,13 @@ class PartitionBinn {
   double m_scanRange;  // in meters
 
   std::vector<std::vector<Cell>> m_cells;  // m_cells[column][row]
+  std::vector<int> vect_id_center;
+  std::vector<double> vect_tracked_centerX;
+  std::vector<double> vect_tracked_centerY;
+  std::vector<double> velX;
+  std::vector<double> velY;
+  std::vector<double> predictionsX;
+  std::vector<double> predictionsY;
 };
 
 #endif

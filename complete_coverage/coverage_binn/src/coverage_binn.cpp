@@ -2,6 +2,8 @@
 #include <coverage_binn/coverage_binn.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <tf2/utils.h>
+#include <geometry_msgs/Pose.h>
+#include <visualization_msgs/MarkerArray.h>
 //
 #include <string>
 //
@@ -27,12 +29,12 @@ CoverageBinn::CoverageBinn() : m_mapInitialized(false)
   ros::NodeHandle nhP("~");
 
   // Get parameters
-  m_x0 = nhP.param("x0", -51.0);
-  m_y0 = nhP.param("y0", -51.0);
+  m_x0 = nhP.param("x0", -100.0);
+  m_y0 = nhP.param("y0", -100.0);
   m_x1 = nhP.param("x1", 100.0);
-  m_y1 = nhP.param("y1", 50.0);
+  m_y1 = nhP.param("y1", 100.0);
   double cellRadius = nhP.param("cell_radius", 2.5); // SET TO 2.5
-  double scanRange = nhP.param("scan_range", 20); // set to 12 originally
+  double scanRange = nhP.param("scan_range", 22); // set to 12 originally
   m_circleAcceptance = nhP.param("goal_tolerance", 1.0); // set to 3 originally
 
   // Set up partition. TODO: set up with parameters
@@ -40,19 +42,28 @@ CoverageBinn::CoverageBinn() : m_mapInitialized(false)
   m_partition.initialize(m_x0, m_y0, m_x1, m_y1, cellRadius, scanRange);
 
   // Set up subscribers
-  ros::Subscriber mapSub =
-      nh.subscribe("inflated_map", 1000, &CoverageBinn::onMapReceived, this);
+  ros::Subscriber mapSub = nh.subscribe("inflated_map", 1000, &CoverageBinn::onMapReceived, this);
+  ros::Subscriber track_pSub = nh.subscribe("datmo/box_kf",10,&CoverageBinn::trackingCenter_p, this);
+
+//  ros::Subscriber trackSub = nh.subscribe("datmo/box_kf",100,&CoverageBinn::trackingCenter, this);
+
+
 
   // Set up publishers
   m_goalPub =
       nh.advertise<geometry_msgs::PoseStamped>("move_base_simple/goal", 1000);
   m_dubinPub = nh.advertise<coverage_boustrophedon::DubinInput>(
       "simple_dubins_path/input", 1000);
+  m_pub_prediction = nh.advertise<visualization_msgs::MarkerArray>("obstacle_prediction", 1);
+  m_pub_reverse_prediction = nh.advertise<visualization_msgs::MarkerArray>("obstacle_reverse_prediction", 1);
 
   // Start main loop
   ROS_INFO("Starting main loop.");
   mainLoop(nh);
 }
+
+
+
 
 void CoverageBinn::onMapReceived(const nav_msgs::OccupancyGrid& grid)
 {
@@ -60,6 +71,9 @@ void CoverageBinn::onMapReceived(const nav_msgs::OccupancyGrid& grid)
     m_mapInitialized = true;
   m_partition.update(grid, m_pose.x, m_pose.y);
 }
+//void CoverageBinn::trackingCenter(const datmo::Track& track) { track_center = track; }
+
+
 
 void CoverageBinn::mainLoop(ros::NodeHandle& nh)
 {
@@ -77,6 +91,7 @@ void CoverageBinn::mainLoop(ros::NodeHandle& nh)
       continue;
     }
 
+  
     // Do BINN
     BINN();
     std::ofstream fw("c:/home/louis/catkin_ws/src/log/output.txt", std::ofstream::out);
@@ -89,7 +104,8 @@ void CoverageBinn::mainLoop(ros::NodeHandle& nh)
       fw.close();
     }
   
-
+    drawPrediction();
+    drawReversePrediction();
     ros::spinOnce();
     rate.sleep();
   }
@@ -119,12 +135,16 @@ bool CoverageBinn::updateRobotPose(const tf2_ros::Buffer& tfBuffer)
 }
 
 void CoverageBinn::BINN()
+
 {
   double xTarget, yTarget;
   int lTarget, kTarget;
   xTarget=80;
-  yTarget=40;
+  yTarget=5;
   m_partition.worldToGrid(xTarget, yTarget, lTarget, kTarget);
+  block_cells(m_pose.x,m_pose.y);
+  //deblock_cells();
+
 
   if (!m_mapInitialized)
     return;
@@ -151,6 +171,7 @@ void CoverageBinn::BINN()
   double xNext, yNext, yawNext, DistanceToTarget;
   findNextTargetWaypoint(xTarget, yTarget, xNext,yNext,yawNext,DistanceToTarget);
 
+
   // Find current position ( the current cell not the exact position)
   int l_current, k_current;
   m_partition.worldToGrid(m_pose.x, m_pose.y, l_current, k_current);
@@ -158,6 +179,7 @@ void CoverageBinn::BINN()
   m_partition.gridToWorld(l_current, k_current, xCurrent, yCurrent); // center of the circle
   // Set current cell as covered, if we pass even a little in it 
   // In that way we know how he navigates
+
   double cellRadius = 2.5;
   if (pointDistance(m_pose.x, m_pose.y, xCurrent, yCurrent) <
       cellRadius)
@@ -165,14 +187,256 @@ void CoverageBinn::BINN()
     m_partition.setCellCovered(l_current, k_current, true);
   }
 
+  
+
   publishGoal(xNext,yNext,yawNext);
+  
 
   ROS_INFO_STREAM("Current pos: " << m_pose.x << ", " << m_pose.y);
   ROS_INFO_STREAM("Next pos:    " << xNext << ", " << yNext << ", " << yawNext);
   ROS_INFO_STREAM("Goal pos coordinates:"<< xTarget << "," << yTarget << "," << DistanceToTarget);
 
+// added
+}
+// FOR DATMO 
+void CoverageBinn::trackingCenter_p(const datmo::TrackArray& track) { track_center = track; }
+
+void CoverageBinn::getTrackedTarget_p(double x, double y,float& track_x, float& track_y,std::vector<double>& trackedX,std::vector<double>& trackedY,std::vector<double>& vel_trackedX,std::vector<double>& vel_trackedY, std::vector<int>& vect_id, std::vector<double>& predX,std::vector<double>& predY){
+  for (unsigned int i =0; i<track_center.tracks.size();i++){
+    double id, vel_x, vel_y;
+    track_x = track_center.tracks[0].odom.pose.pose.position.x;
+    track_y = track_center.tracks[0].odom.pose.pose.position.y;
+    vel_x = track_center.tracks[0].odom.twist.twist.linear.x;
+    vel_y = track_center.tracks[0].odom.twist.twist.linear.y;
+    id = track_center.tracks[0].id;
+    vect_id.push_back(id);
+    trackedX.push_back(track_x);
+    trackedY.push_back(track_y);
+    vel_trackedX.push_back(vel_x);
+    vel_trackedY.push_back(vel_y);
+    int end;
+    end = vect_id.size();
+    double alpha, beta;
+    double teller, noemer;
+    double x_mean, y_mean;
+    double vel_mean, tracked_vel;
+    int queue;
+    vel_mean = 0; tracked_vel = 0; x_mean = 0; y_mean = 0; alpha = 0; beta=0; teller = 0; noemer = 0;
+    queue = 15;
+    bool linear_regression = false;
+    // This is for the linear regression, but it does not work well!
+    if (linear_regression == true){
+
+   
+      if (vect_id[end-1] == vect_id[end-queue]) {
+        for (int i = 1; i <= queue; i = i + 1){
+          x_mean = x_mean + trackedX[end-i]/queue;
+          y_mean = y_mean + trackedY[end-i]/queue;
+          tracked_vel = sqrt(vel_trackedX[end-i]*vel_trackedX[end-i]+vel_trackedY[end-i]*vel_trackedY[end-i]);
+          vel_mean = vel_mean + tracked_vel/queue;
+
+        }
+        for (int i = 1; i <= queue; i = i + 1){
+          teller = teller + (trackedX[end-i]-x_mean)*(trackedY[end-i]-y_mean);
+          noemer = noemer + (trackedX[end-i]-x_mean)*(trackedX[end-i]-x_mean);
+        }
+        beta = teller/noemer;
+        alpha = y_mean -(beta*x_mean);
+
+    
+      }
+     ROS_INFO_STREAM("beta and alpha:"<< beta <<"," << alpha);
+     ROS_INFO_STREAM("id begin and end andd mean velocity:" << vect_id[end-1] << "," <<vect_id[end-queue] << "," << vel_mean);
+    }
+    // Better alternative with the estimated velocity and  a mean position to obtain correct positions
+    else{
+      if (vect_id[end-1] == vect_id[end-queue]) {
+        double vel_x_mean, vel_y_mean;
+        vel_x_mean =0;
+        vel_y_mean = 0;
+
+        for (int i = 1; i <= queue; i = i + 1){
+            x_mean = x_mean + trackedX[end-i]/queue;
+            y_mean = y_mean + trackedY[end-i]/queue;
+            vel_x_mean = vel_x_mean+ vel_trackedX[end-i]/queue;
+            vel_y_mean = vel_y_mean + vel_trackedY[end-i]/queue;
+            tracked_vel = sqrt(vel_trackedX[end-i]*vel_trackedX[end-i]+vel_trackedY[end-i]*vel_trackedY[end-i]);
+            vel_mean = vel_mean + tracked_vel/queue;
+
+        }
+      //  ROS_INFO_STREAM("x_mean, y_mean:"<< x_mean <<"," << y_mean);
+          ROS_INFO_STREAM("vel_mean:"<< vel_mean);
+
+        predX.clear();
+        predY.clear();
+        double dist_obstacle;
+        dist_obstacle = sqrt((x-x_mean)*(x-x_mean)+(y-y_mean)*(y-y_mean));
+        if (dist_obstacle <= 45){
+          for (int i = 1; i <= queue; i = i + 1){
+            double predicted_x, predicted_y;
+            predicted_x =x_mean+vel_x_mean*i*1.2;
+            predicted_y =y_mean+vel_y_mean*i*1.2;
+            predX.push_back(predicted_x);
+            predY.push_back(predicted_y);
+                 int l_pred,k_pred;
+            m_partition.worldToGrid(predicted_x,predicted_y, l_pred, k_pred);
+            m_partition.setpredictioncovered(l_pred,k_pred,true);
+          }
+      
+        
+        }
+      ROS_INFO_STREAM("predicted end:"<< predX[14] <<"," << predY[14]);
+  
+      }
+      
+    }
+  
+    // ROS_INFO_STREAM("center_box_position:"<< track_x << "," << track_y << "," << id);
+  }
 
 }
+
+void CoverageBinn::block_cells(double x, double y){
+  
+
+  float track_x, track_y;
+  getTrackedTarget_p(x,y,track_x, track_y,vect_tracked_centerX,vect_tracked_centerY,velX,velY,vect_id_center,predictionsX,predictionsY);
+  if (predictionsX.empty()){
+   // double tttt = track_center.tracks[0].odom.pose.pose.position.x;
+  
+    ROS_INFO_STREAM("Obstacle not found");
+  }
+  else{
+   // for (int i = 0; i <= predictionsX.size(); i = i + 1){
+     // int l_pred,k_pred;
+     // m_partition.worldToGrid(predictionsX[i],predictionsY[i], l_pred, k_pred);
+     // m_partition.setpredictioncovered(l_pred,k_pred);
+
+
+    ROS_INFO_STREAM("Obstacle found");
+    ROS_INFO_STREAM("predicted end:"<< predictionsX[14] <<"," << predictionsY[14]);
+  }
+
+  
+
+  
+}
+
+void CoverageBinn::deblock_cells(){
+  double x_deblock, y_deblock;
+  for (int i = 1; i <= predictionsX.size(); i = i + 1){
+  
+    if(predictionsY[i]< predictionsY[0]){
+      x_deblock = predictionsX[i]-2*(predictionsX[i]-predictionsX[0]);
+      y_deblock = predictionsY[i]-2*(predictionsY[i]-predictionsY[0])+4;
+    }
+    else if (predictionsY[i] > predictionsY[0]){
+      x_deblock = predictionsX[i]-2*(predictionsX[i]-predictionsX[0]);
+      y_deblock = predictionsY[i]-2*(predictionsY[i]-predictionsY[0])-4;
+    }
+    else {
+      x_deblock = predictionsX[i]-2*(predictionsX[i]-predictionsX[0]);
+      y_deblock = predictionsY[i]-2*(predictionsY[i]-predictionsY[0]);
+
+    }
+ 
+    int l_deblock, k_deblock;
+    m_partition.worldToGrid(x_deblock, y_deblock, l_deblock, k_deblock);
+    m_partition.setbacktofree(l_deblock, k_deblock);
+    m_partition.setbacktofree(l_deblock, k_deblock+1);
+    m_partition.setbacktofree(l_deblock, k_deblock-1);
+     m_partition.setbacktofree(l_deblock, k_deblock+2);
+    m_partition.setbacktofree(l_deblock, k_deblock-2);
+   // m_partition.setbacktofree(l_deblock, k_deblock);
+    //m_partition.setbacktofree(l_deblock, k_deblock);
+
+  }
+
+}
+
+void CoverageBinn::drawReversePrediction(){
+  double x_deblock, y_deblock;
+  visualization_msgs::MarkerArray ma;
+  int id = 0;
+  for (int i = 1; i <= predictionsX.size(); i++)
+  {
+    if(predictionsY[i]< predictionsY[0]){
+      x_deblock = predictionsX[i]-2*(predictionsX[i]-predictionsX[0]);
+      y_deblock = predictionsY[i]-2*(predictionsY[i]-predictionsY[0])+4;
+    }
+    else if (predictionsY[i] > predictionsY[0]){
+      x_deblock = predictionsX[i]-2*(predictionsX[i]-predictionsX[0]);
+      y_deblock = predictionsY[i]-2*(predictionsY[i]-predictionsY[0])-4;
+    }
+    else {
+      x_deblock = predictionsX[i]-2*(predictionsX[i]-predictionsX[0]);
+      y_deblock = predictionsY[i]-2*(predictionsY[i]-predictionsY[0]);
+
+    }
+ 
+
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "map";
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "shapes";
+    marker.id = id++;
+    marker.type = visualization_msgs::Marker::CYLINDER;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.position.x = x_deblock;
+    marker.pose.position.y = y_deblock;
+    marker.scale.x = 0.3;
+    marker.scale.y = 0.3;
+    marker.scale.z = 0.01;
+    marker.color.r = 0;
+    marker.color.g = 0;
+    marker.color.b = 255;
+    marker.color.a = 1;
+
+    marker.lifetime = ros::Duration(0.0);
+    ma.markers.push_back(marker);
+    
+  }
+  m_pub_reverse_prediction.publish(ma);
+}
+
+
+void CoverageBinn::drawPrediction(){
+
+  visualization_msgs::MarkerArray ma;
+  int id = 0;
+  double x_deblock, y_deblock;
+  for (int i = 1; i <= predictionsX.size(); i++)
+  {
+   
+
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "map";
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "shapes";
+    marker.id = id++;
+    marker.type = visualization_msgs::Marker::CYLINDER;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.position.x = predictionsX[i];
+    marker.pose.position.y = predictionsY[i];
+    marker.scale.x = 0.3;
+    marker.scale.y = 0.3;
+    marker.scale.z = 0.01;
+    marker.color.r = 0;
+    marker.color.g = 255;
+    marker.color.b = 0;
+    marker.color.a = 1;
+
+    marker.lifetime = ros::Duration(0.0);
+    ma.markers.push_back(marker);
+    
+  }
+  m_pub_prediction.publish(ma);
+}
+
+
+
+
+
 
 
 // THIS WORKS NOW ADAPT IT TO AVOID THE OBSTACLE
@@ -213,12 +477,12 @@ void CoverageBinn::findNextTargetWaypoint(double& xTarget, double& yTarget, doub
     }
   }
   // a point in front (1 cell)
-  Next_cellx = m_pose.x+6*cos(angle_of_line);
-  Next_celly = m_pose.y+6*sin(angle_of_line);
+  Next_cellx = m_pose.x+2*cos(angle_of_line);
+  Next_celly = m_pose.y+2*sin(angle_of_line);
 
   // a point further away (2 cells)
-  Next_cellx2 = m_pose.x+12*cos(angle_of_line);
-  Next_celly2 = m_pose.y+12*sin(angle_of_line);
+  Next_cellx2 = m_pose.x+4*cos(angle_of_line);
+  Next_celly2 = m_pose.y+4*sin(angle_of_line);
 
   int lNext_cell, kNext_cell, lNext_cell2, kNext_cell2;
   m_partition.worldToGrid(Next_cellx,Next_celly,lNext_cell,kNext_cell);
@@ -247,11 +511,11 @@ void CoverageBinn::findNextTargetWaypoint(double& xTarget, double& yTarget, doub
       do {
         ii = i*M_PI/180;
         // The calculation for the turning to the right
-        Next_cellx_blocked_right = m_pose.x+6*(cos(angle_of_line)+cos(ii));
-        Next_celly_blocked_right = m_pose.y+6*(sin(angle_of_line)+sin(ii));
+        Next_cellx_blocked_right = m_pose.x+4*(cos(angle_of_line)+cos(ii)); // was 4 30/04
+        Next_celly_blocked_right = m_pose.y+4*(sin(angle_of_line)+sin(ii)); // was 8 30/04
        
-        Next_cellx2_blocked_right = m_pose.x+12*(cos(angle_of_line)+cos(ii));
-        Next_celly2_blocked_right= m_pose.y+12*(sin(angle_of_line)+sin(ii));
+        Next_cellx2_blocked_right = m_pose.x+8*(cos(angle_of_line)+cos(ii));
+        Next_celly2_blocked_right= m_pose.y+8*(sin(angle_of_line)+sin(ii));
         
         m_partition.worldToGrid(Next_cellx_blocked_right,Next_celly_blocked_right,lNext_cell_right,kNext_cell_right);
         m_partition.worldToGrid(Next_cellx2_blocked_right,Next_celly2_blocked_right,lNext_cell2_right,kNext_cell2_right);
@@ -266,11 +530,11 @@ void CoverageBinn::findNextTargetWaypoint(double& xTarget, double& yTarget, doub
       do {
         iii = -i*M_PI/180;
         // The calculation for the turning to the left
-        Next_cellx_blocked_left = m_pose.x+6*(cos(angle_of_line)+cos(iii));
-        Next_celly_blocked_left = m_pose.y+6*(sin(angle_of_line)+sin(iii));
+        Next_cellx_blocked_left = m_pose.x+4*(cos(angle_of_line)+cos(iii));
+        Next_celly_blocked_left = m_pose.y+4*(sin(angle_of_line)+sin(iii));
        
-        Next_cellx2_blocked_left = m_pose.x+12*(cos(angle_of_line)+cos(iii));
-        Next_celly2_blocked_left= m_pose.y+12*(sin(angle_of_line)+sin(iii));
+        Next_cellx2_blocked_left = m_pose.x+8*(cos(angle_of_line)+cos(iii));
+        Next_celly2_blocked_left= m_pose.y+8*(sin(angle_of_line)+sin(iii));
         
         m_partition.worldToGrid(Next_cellx_blocked_left,Next_celly_blocked_left,lNext_cell_left,kNext_cell_left);
         m_partition.worldToGrid(Next_cellx2_blocked_left,Next_celly2_blocked_left,lNext_cell2_left,kNext_cell2_left);
