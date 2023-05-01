@@ -2,8 +2,8 @@
 <!-- built from https://classic.gazebosim.org/tutorials?tut=actor&cat=build_robo -->
 <sdf version="1.6">
    <world xmlns:xacro="http://ros.org/wiki/xacro">
-      <xacro:macro name="moving_box" params="name x:=0 y:=0 z:=1">
-        <actor name="${name}">
+      <xacro:macro name="moving_box" params="name x:=0 y:=0 z:=2">
+        <actor name="animated_box">
           <link name="box_link">
             <visual name="visual">
               <geometry>
@@ -19,23 +19,23 @@
             <trajectory id="0" type="square">
               <waypoint>
                   <time>0.0</time>
-                  <pose>${x}-1 ${y}-1 1 0 0 0</pose>
+                  <pose>-1 -1 1 0 0 0</pose>
               </waypoint>
               <waypoint>
                   <time>1.0</time>
-                  <pose>${x}-1 ${y}+1 1 0 0 0</pose>
+                  <pose>-1 1 1 0 0 0</pose>
               </waypoint>
               <waypoint>
                   <time>2.0</time>
-                  <pose>${x}+1 ${y}+1 1 0 0 0</pose>
+                  <pose>1 1 1 0 0 0</pose>
               </waypoint>
               <waypoint>
                   <time>3.0</time>
-                  <pose>${x}+1 ${y}-1 1 0 0 0</pose>
+                  <pose>1 -1 1 0 0 0</pose>
               </waypoint>
               <waypoint>
                   <time>4.0</time>
-                  <pose>${x}-1 ${y}-1 1 0 0 0</pose>
+                  <pose>-1 -1 1 0 0 0</pose>
               </waypoint>
             </trajectory>
           </script>

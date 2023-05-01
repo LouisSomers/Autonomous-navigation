@@ -36,7 +36,7 @@
         <wave_period0>5</wave_period0>
         <wave_direction0>-1 0</wave_direction0>
 
-        <wave_amp1>0.01</wave_amp1>
+        <wave_amp1>0.1</wave_amp1>
         <wave_period1>0.7</wave_period1>
         <wave_direction1>-0.7 0.7</wave_direction1>
 

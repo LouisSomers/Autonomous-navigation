@@ -4,28 +4,28 @@
 
   <!-- Load definition of simple_box -->
   <xacro:include filename="$(find usv_worlds)/worlds/simple_box.xacro" />
+
   
   <xacro:macro name="simple_obstacles">
 
-    <xacro:simple_box name="box_north" x="100" y="60" Y="200" />
-    <xacro:simple_box name="box_south" x="-50" y="60" Y="200" />
+    <!--<xacro:simple_box name="box_north" x="100" y="60" Y="220" />
+    <xacro:simple_box name="box_south" x="-50" y="60" Y="220" />
     <xacro:simple_box name="box_east" x="25" y="-40" X="150" />
-    <xacro:simple_box name="box_west" x="-10" y="160" X="80" />
-    <!--  Boxes to do static avoidance -->
-    <xacro:simple_box name="box_test" x="30" y="30" X="1" Y="1" Z="2" />
-    <xacro:simple_box name="box_test_two" x="15" y="15" X="2" Y="2" Z="2" />
-    <xacro:simple_box name="box_test_three" x="25" y="25" X="20" Y="20" Z="2" />
-    <xacro:simple_box name="box_test_four" x="23" y="20" X="20" Y="20" Z="2" />
+    <xacro:simple_box name="box_west" x="25" y="160" X="150" /> -->
 
+    <!--  Boxes to do static avoidance -->
+    <!--<xacro:simple_box name="box_test" x="30" y="30" X="2" Y="2" Z="2" />
+    <xacro:simple_box name="box_test2" x="25" y="30" X="2" Y="2" Z="2" />
+    <xacro:simple_box name="box_test3" x="22" y="30" X="2" Y="2" Z="2" />
+    <xacro:simple_box name="box_test4" x="15" y="30" X="2" Y="2" Z="2" />
+    <xacro:simple_box name="box_test5" x="35" y="30" X="2" Y="2" Z="2" />-->
+    
+    <xacro:simple_box name="box_test" x="40" y="22" X="5" Y="5" Z="2" />
+    <xacro:simple_box name="box_test_two" x="20" y="8" X="3" Y="3" Z="2" />
+    <!--<xacro:simple_box name="box_test_three" x="25" y="25" X="2" Y="2" Z="2" />
+    <xacro:simple_box name="box_test_four" x="23" y="25" X="2" Y="2" Z="2" />-->
 
 
   </xacro:macro>
- 
+  
 </world>
-
-
-    <!--<xacro:simple_box name="jetty_one" x="-17.5" y="7" z="0.50" X="65" Y="3" Z="1.0" color="Wood" />
-    <xacro:simple_box name="jetty_two" x="-7.5" y="64" z="0.50" X="85" Y="4" Z="1.0" color="Wood" />
-    <xacro:simple_box name="jetty_three" x="92.5" y="74" z="0.50" X="5" Y="112" Z="1.0" color="Wood" />
-
-    <xacro:simple_box name="box_north2" x="10" y="-20" Y="100" yaw="-1.0" /> -->

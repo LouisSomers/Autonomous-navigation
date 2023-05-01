@@ -7,18 +7,20 @@
   
   <xacro:macro name="Obstacle_Path">
     <!--  Boxes to do static avoidance -->
-    <xacro:simple_box name="box_1" x="20" y="10" X="42" Y="2" Z="2" />
+   <!--> <xacro:simple_box name="box_1" x="22" y="10" X="42" Y="2" Z="2" />
     <xacro:simple_box name="box_2" x="30" y="-10" X="62" Y="2" Z="2" />
     <xacro:simple_box name="box_3" x="40" y="30" X="2" Y="40" Z="2" />
     <xacro:simple_box name="box_4" x="60" y="10" X="2" Y="40" Z="2" />
     <xacro:simple_box name="box_5" x="75" y="50" X="72" Y="2" Z="1" />
-    <xacro:simple_box name="box_6" x="85" y="30" X="52" Y="2" Z="1" />
+    <xacro:simple_box name="box_6" x="85" y="30" X="52" Y="2" Z="1" />-->
 
     <!-- borders of the whole box-->
-    <xacro:simple_box name="box_north" x="111" y="20" Y="62" />
-    <xacro:simple_box name="box_south" x="-1" y="20" Y="62" />
-    <xacro:simple_box name="box_east" x="55" y="-11" X="112" />
-    <xacro:simple_box name="box_west" x="55" y="51" X="112" />
+    <xacro:simple_box name="box_north" x="111" y="0" Y="62" />
+    <xacro:simple_box name="box_south" x="-1" y="0" Y="62" />
+    <xacro:simple_box name="box_east" x="55" y="-24" X="112" />
+    <xacro:simple_box name="box_west" x="55" y="24" X="112" />
+
+
 
   </xacro:macro>
 
@@ -30,4 +32,4 @@
     <xacro:simple_box name="jetty_two" x="-7.5" y="64" z="0.50" X="85" Y="4" Z="1.0" color="Wood" />
     <xacro:simple_box name="jetty_three" x="92.5" y="74" z="0.50" X="5" Y="112" Z="1.0" color="Wood" />
 
-    <xacro:simple_box name="box_north2" x="10" y="-20" Y="100" yaw="-1.0" /> -->
+    <xacro:simple_box name="box_north2" x="10" y="-22" Y="100" yaw="-1.0" /> -->

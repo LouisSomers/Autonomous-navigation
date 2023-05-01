@@ -2,15 +2,15 @@
 <launch>
 
   <!-- Gazebo world to load -->
-  <arg name="world" default="$(find usv_worlds)/worlds/usvsim.world" />
+  <arg name="world" default="$(find usv_worlds)/worlds/usv.world" /> 
   <!-- If true, run gazebo GUI -->
   <arg name="gui" default="true" />
   <!-- If true, run gazebo in verbose mode -->
   <arg name="verbose" default="false"/>
 
   <!-- Initial USV location and attitude-->
-  <arg name="x" default="0.0" />
-  <arg name="y" default="-5.0" />
+  <arg name="x" default="10" /> <!--was 5 on 28/04 -->
+  <arg name="y" default="0.0" /> <!-- origanally set to  -5 changed it to 0-->
   <arg name="z" default="0.0" />
   <arg name="R" default="0" />
   <arg name="P" default="0" />

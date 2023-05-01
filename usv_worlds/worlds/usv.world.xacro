@@ -9,7 +9,7 @@
         </clouds>
       </sky>
       <grid>false</grid>
-      <origin_visual>false</origin_visual>
+      <origin_visual>true</origin_visual>
     </scene>
 
     <!-- Estimated latitude/longitude of Trondheim harbor from satellite imagery -->
@@ -43,12 +43,18 @@
     <!-- Some simple obstacles in the way-->
 
     <!--<xacro:include filename="$(find usv_worlds)/worlds/simple_obstacles.xacro" />
-    <xacro:simple_obstacles /> -->
+    <xacro:simple_obstacles />-->
 
     <!-- simple trajectory to navigate between walls-->
 
     <xacro:include filename="$(find usv_worlds)/worlds/Obstacle_Path.xacro" />
     <xacro:Obstacle_Path />
+
+    <!-- First test with dynamic obstacle without changing anything -->
     
+    <!--<xacro:include filename="$(find usv_worlds)/worlds/moving_obstacles.xacro" />
+    <xacro:moving_obstacles /> -->
+     <!-- CUSTOM Ground Plane -->
+
   </world>
 </sdf>

@@ -81,7 +81,7 @@
 
   <!-- Add planar LIDAR -->
   <xacro:if value="$(arg lidar_enabled)">
-    <xacro:otter_lidar name="lidar" x="0" y="0.0" z="0.40" min_range="1.2" max_range="25" visualize="false" />
+    <xacro:otter_lidar name="lidar" x="0" y="0.0" z="0.40" min_range="1.2" max_range="25" visualize="false" /> <!--changed from 25 to 15 for testing 28/04-->
   </xacro:if>
 
   <!-- Add P3D ground truth -->
