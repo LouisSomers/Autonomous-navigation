@@ -1,15 +1,15 @@
 # Autonomous navigation with dynamic obstacle avoidance
-This is an implementation of autonomous navigation with dynamic obstacle avoidance in a simulation and the implementation in real-life. There is also an explenation what is needed to be able to use all the sensors that were used.
+This is an implementation of autonomous navigation with dynamic obstacle avoidance in a simulation and the implementation of it in real-life. There is also an explanation of what is needed to be able to use all the sensors that were used.
 
 On this page all the packages that are needed to run the simulation and to run it in real-life are found. The paper about this is found [here]().
 
-All the software is run using ROS Noetic and Gazebo 11. ROS Noetic can be installed from [here, ROS Noetic](http://wiki.ros.org/noetic/Installation/Ubuntu).
+All the software is run using ROS Noetic and Gazebo 11. ROS Noetic can be installed from [here, ROS Noetic](http://wiki.ros.org/noetic/Installation/Ubuntu). Gazebo 11 can be installed from [here, Gazebo](https://classic.gazebosim.org/tutorials?tut=install_ubuntu).
 
 ## Simulation
-A navigation method for obstacle avoidance in a static and dynamic environment is implemented in a simulation. All the files discussed below should be installed in a  catkin workspace ```catkin_ws ```, except for the ROS cartographer this should be installed in a seperate workspace that is isolated from the other packages, to prohibit interference between the packages. 
+A navigation method for obstacle avoidance in a static and dynamic environment is implemented in a simulation. All the files discussed below should be installed in a  catkin workspace ```catkin_ws ```, except for the ROS cartographer this should be installed in a seperate workspace that is isolated from the other packages, to prohibit interference between the packages.  Always make sure that the terminal your working in has sourced setup.bash. This can be done in the terminal by doing ``` source devel/setup.bash ```. This is done to set up the environment variables that are used by ROS and Gazebo.
 
 ### Simulator
-The simulation is done in the USV simulater from Lenses and can be installed from his github: [USV simulator](https://github.com/jhlenes/usv_simulator). This simulator forms the basis of the work. It is already included in this github and thus does not need to be cloned from the Lenes Github seperatly.
+The simulation is done in the USV simulater from Lenes and can be installed from his github: [USV simulator](https://github.com/jhlenes/usv_simulator). This simulator forms the basis of the work. It is already included in this github and thus does not need to be cloned from Lenes Github seperately.
 
 ### Complete coverage from Lenes
 The starting point of the implementation of the navigation method was found in the work of Lenes for the mapping of the seabed in sheltered waters. His code can be found on his github via this link [complete coverage by Lenes](https://github.com/jhlenes/complete_coverage). Everything that is needed from this to let the simulation work is already included in this Github page.
@@ -72,11 +72,11 @@ It is possible that the D435i is not found, when launching the viewer or a file.
 
 
 ### MAVROS
-MAVROS is no longer supported for ROS noetic. The community has shifted to working with ROS2. However MAVROS can still be installed from source. The instructions can be found on [MAVROS from source](https://github.com/mavlink/mavros/tree/master/mavros#installation). 
+MAVROS is no longer supported for ROS noetic. The community has shifted to working with ROS2. However, MAVROS can still be installed from source. The instructions can be found on [MAVROS from source](https://github.com/mavlink/mavros/tree/master/mavros#installation). 
 
 Mavros is needed to enable a communication link between the autopilot, in this case the Cube Orange and NUC. The Cube is configured with px4 software and thus the following launch file must be used ``` px4.launch``` In this file some parameters were adapted to enable the forwarding of GPS data towards the NUC and enable thruster commands from the NUC to the Cube.
 
-### MAVLink
+### MAVLink (MAVProxy)
 When one wants communication between the Cube and NUC without using ROS, MAVLink can be used. This establishes communication between both such that one can issue simple commands or read out data from the Cube on the computer. MAVLink is installed from [MAVLink_GitHub](https://github.com/mavlink/mavlink). Communication is established as follows
 ```
 $ sudo chmod 666 /dev/ttyACMO
@@ -91,6 +91,6 @@ The software for the wind sensor can be found here [Trisonica wind sensor](https
 The wind sensor is ran with ``` rosrun trisonica_ros trisonica.py```. 
 
 ## Data analysis
-There are also some other files on this Github page that serve to analyse the results obtained from the simulations and from some components. The results from these files are all explained in the thesis. This analysis includes matlab files about the accuracy of the detection and tracking of dynamic obstacles and the accuracy of the GPS used, as well as the calculation of the moment of inertia of the USV and the parameters of the used T200 thrusters.
+There are also some other files on this Github page that serve to analyse the results obtained from the simulations and from hardware components. The results from these files are all explained in the thesis. This analysis includes matlab files about the accuracy of the detection and tracking of dynamic obstacles and the accuracy of the GPS used, as well as the calculation of the moment of inertia of the USV and the parameters of the used T200 thrusters.
 
 
