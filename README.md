@@ -58,12 +58,12 @@ The LIDAR can be tested to see if it works by running the following launch file 
 
 The launching of the node for the lidar is included in the overall launch file.
 
-### Realsense D435i IMU
-The sofware of the RealSense is installed from [RealSense SDK](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md#installing-the-packages). The necessary complementary files to enable all the capabilities of the D435i needs to be installed from [Realsense files](https://github.com/leggedrobotics/realsense-ros-rsl?fbclid=IwAR1UiCX0Tg-nl2NwrTvhwvcD0TtjAlMupl90yzODqZLOk2yu52TKlvp6EVw). These files 
+### RealSense D435i IMU
+The sofware of the RealSense is installed from [RealSense SDK](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md#installing-the-packages). The necessary complementary files to enable all the capabilities of the D435i needs to be installed from [RealSense files](https://github.com/leggedrobotics/realsense-ros-rsl?fbclid=IwAR1UiCX0Tg-nl2NwrTvhwvcD0TtjAlMupl90yzODqZLOk2yu52TKlvp6EVw). These files 
 
 The D435i can be used as a camera to monitor the movements of the USV. This can be done in the RealSense-viewer application. This is launched by simply typing the command ```realsense-viewer``` in a terminal. The D435i will be automatically recognised.
 
-To run the Realsense nodes, the following file needs to be launched. ```rs_camera.launch```. In this file, the IMU is disabled by default and needs to be enabled. To combine the information of the accelerometer and gyroscope a combination method needs to be chosen. Here, linear interpolation wa chosen. To check wether the information of the IMU is published this command can be used ```rostopic echo camera/imu```.
+To run the RealSense nodes, the following file needs to be launched. ```rs_camera.launch```. In this file, the IMU is disabled by default and needs to be enabled. To combine the information of the accelerometer and gyroscope a combination method needs to be chosen. Here, linear interpolation wa chosen. To check wether the information of the IMU is published this command can be used ```rostopic echo camera/imu```.
 
 
 It is possible that the D435i is not found, when launching the viewer or a file. This can be caused by the KERNEL of Ubuntu that is used. The D435i does not work on the 5.15 0-70 and when restarting another KERNEL needs to be selected. When it was changed to 5.15.0-56 the D435i is found and everything works as it should.
@@ -81,7 +81,7 @@ The software for the wind sensor can be found here [Trisonica wind sensor](https
 
 The wind sensor is ran with ``` rosrun trisonica_ros trisonica.py```. 
 
-### Data analysis
+## Data analysis
 There are also some other files on this Github page that serve to analyse the results obtained from the simulations and from some components. The results from these files are all explained in the thesis. This analysis includes matlab files about the accuracy of the detection and tracking of dynamic obstacles and the accuracy of the GPS used, as well as the calculation of the moment of inertia of the USV and the parameters of the used T200 thrusters.
 
 
