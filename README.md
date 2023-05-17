@@ -1,7 +1,7 @@
 # Autonomous navigation with dynamic obstacle avoidance
 This is an implementation of autonomous navigation with dynamic obstacle avoidance in a simulation and the implementation in real-life. There is also an explenation what is needed to be able to use all the sensors that were used. 
 
-On this page all the packages that are needed to run the simulation and to run it in real-life are found. The paper about this is found [here]()
+On this page all the packages that are needed to run the simulation and to run it in real-life are found. The paper about this is found [here]().
 
 ## Simulation
 A navigation method for obstacle avoidance in a static and dynamic environment is implemented in a simulation. All the files discussed below should be installed in a  catkin workspace ```catkin_ws ```, except for the ROS cartographer this should be installed in a seperate workspace that is isolated from the other packages, to prohibit interference between the packages. 
