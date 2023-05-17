@@ -1,7 +1,9 @@
 # Autonomous navigation with dynamic obstacle avoidance
-This is an implementation of autonomous navigation with dynamic obstacle avoidance in a simulation and the implementation in real-life. There is also an explenation what is needed to be able to use all the sensors that were used. 
+This is an implementation of autonomous navigation with dynamic obstacle avoidance in a simulation and the implementation in real-life. There is also an explenation what is needed to be able to use all the sensors that were used.
 
 On this page all the packages that are needed to run the simulation and to run it in real-life are found. The paper about this is found [here]().
+
+All the software is run using ROS Noetic and Gazebo 11. ROS Noetic can be installed from [here, ROS Noetic](http://wiki.ros.org/noetic/Installation/Ubuntu).
 
 ## Simulation
 A navigation method for obstacle avoidance in a static and dynamic environment is implemented in a simulation. All the files discussed below should be installed in a  catkin workspace ```catkin_ws ```, except for the ROS cartographer this should be installed in a seperate workspace that is isolated from the other packages, to prohibit interference between the packages. 
@@ -74,6 +76,13 @@ MAVROS is no longer supported for ROS noetic. The community has shifted to worki
 
 Mavros is needed to enable a communication link between the autopilot, in this case the Cube Orange and NUC. The Cube is configured with px4 software and thus the following launch file must be used ``` px4.launch``` In this file some parameters were adapted to enable the forwarding of GPS data towards the NUC and enable thruster commands from the NUC to the Cube.
 
+### MAVLink
+When one wants communication between the Cube and NUC without using ROS, MAVLink can be used. This establishes communication between both such that one can issue simple commands or read out data from the Cube on the computer. MAVLink is installed from [MAVLink_GitHub](https://github.com/mavlink/mavlink). Communication is established as follows
+```
+$ sudo chmod 666 /dev/ttyACMO
+$ mavprox.py --master=/dev/ttyACMO
+```
+MAVLink is good when one wants to check the status of the USV or test some simple commands. MAVLink is all executed from the terminal. When a continuous stream of data of a sensor is needed in a script to position the USV, for example, it is better to use MAVROS.
 
 
 ### Trisonica wind sensor 
