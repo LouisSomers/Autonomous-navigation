@@ -69,7 +69,7 @@ It is possible that the D435i is not found, when launching the viewer or a file.
 
 
 ### MAVROS
-MAVROS is no longer supported for ROS noetic. The community has shifted to working with ROS2. However MAVROS can still be installed from source. The instructions can be found on[MAVROS from source](https://github.com/mavlink/mavros/tree/master/mavros#installation). 
+MAVROS is no longer supported for ROS noetic. The community has shifted to working with ROS2. However MAVROS can still be installed from source. The instructions can be found on [MAVROS from source](https://github.com/mavlink/mavros/tree/master/mavros#installation). 
 
 Mavros is needed to enable a communication link between the autopilot, in this case the Cube Orange and NUC. The Cube is configured with px4 software and thus the following launch file must be used ``` px4.launch``` In this file some parameters were adapted to enable the forwarding of GPS data towards the NUC and enable thruster commands from the NUC to the Cube.
 
