@@ -61,7 +61,7 @@ The LIDAR can be tested to see if it works by running the following launch file 
 The launching of the node for the lidar is included in the overall launch file.
 
 ### RealSense D435i IMU
-The sofware of the RealSense is installed from [RealSense SDK](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md#installing-the-packages). The necessary complementary files to enable all the capabilities of the D435i needs to be installed from [RealSense files](https://github.com/leggedrobotics/realsense-ros-rsl?fbclid=IwAR1UiCX0Tg-nl2NwrTvhwvcD0TtjAlMupl90yzODqZLOk2yu52TKlvp6EVw). These files 
+The sofware of the RealSense is installed from [RealSense SDK](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md#installing-the-packages). The necessary complementary files to enable all the capabilities of the D435i needs to be installed from [RealSense files](https://github.com/leggedrobotics/realsense-ros-rsl?fbclid=IwAR1UiCX0Tg-nl2NwrTvhwvcD0TtjAlMupl90yzODqZLOk2yu52TKlvp6EVw).
 
 The D435i can be used as a camera to monitor the movements of the USV. This can be done in the RealSense-viewer application. This is launched by simply typing the command ```realsense-viewer``` in a terminal. The D435i will be automatically recognised.
 
