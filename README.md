@@ -54,7 +54,7 @@ It is important when you want to use the LIDAR that it has the appropriate permi
 ```
 $ KERNEL=="ttyUSB*", MODE="0666"
 $ sudo chmod 666/dev/ttyUSB0
-ls -l /dev |grep ttyUSB #to check if it is on assigned
+ls -l /dev |grep ttyUSB #to check if it is on assigned port
 ```
 The LIDAR can be tested to see if it works by running the following launch file ``` roslaunch rplidar_ros view_rplidar_s1.launch```. This launch file also opens a visual representation in RVIZ. To launch the node that sends the message without RVIZ, the following launch file needs to be ran ``` roslaunch rplidar_ros rplidar_s1.launch```
 
