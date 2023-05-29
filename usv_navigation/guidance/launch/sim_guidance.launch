@@ -1,0 +1,35 @@
+<launch>
+ 
+ 
+
+  <!-- Start SLAM -->
+  <include file="$(find otter_slam)/launch/sim_otter.launch">
+    <arg name="rviz" value="false" />
+  </include>
+
+
+
+  <!-- Map inflating --> <!-- still needed to account for the obstacles and a safety margin for the obstacles-->
+  <include file="$(find map_inflating)/launch/map_inflating.launch">
+    <arg name="inflating_radius" value="0.5" />
+  </include>
+
+  <!-- Guidance node -->
+  <node name="guidance_node" pkg="guidance" type="guidance_node" output="screen">
+  </node>
+
+  
+
+  <!-- Visualize in rviz -->
+  <node name="rviz" pkg="rviz" type="rviz" required="true"
+    args="-d $(find coverage_boustrophedon)/config/coverage.rviz" />
+
+  <!-- Start controllers for simulated Otter USV -->
+  <node name="OtterController" pkg="otter_control" type="controller" />
+
+  <!-- Start connection with OBS -->
+  <!--<include file="$(find mr_obs_connector)/launch/mr_obs_connector.launch" output="">
+    <arg name="host" value="localhost" />
+  </include>-->
+
+</launch>

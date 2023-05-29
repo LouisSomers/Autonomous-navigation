@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<launch>
+
+  
+
+  <node name="coverage_binn_node" pkg="coverage_binn" type="coverage_binn_node" output="screen">
+    <param name="cell_radius"     value="3" /> <!--changed from 3 30/04-->
+    <param name="goal_tolerance"  value="0.5" />
+    <param name="scan_range"      value="25" />
+    <!-- Set the dimensions of the cell map here. much to heavt to load everything at once so limit it-->
+    <!-- The target waypoint is now at 45 45 so go initialize the map further than that-->
+    <param name="x0"              value="0" />
+    <param name="y0"              value="-30" />
+    <param name="x1"              value="85" />
+    <param name="y1"              value="30" />
+  </node>
+  
+  <node name="simple_dubins_path_node" pkg="coverage_boustrophedon" type="simple_dubins_path_node" output="screen">
+    <param name="turning_radius"  value="1" />
+    <param name="path_resolution" value="0.10" />
+  </node>
+
+
+
+
+</launch>
