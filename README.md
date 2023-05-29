@@ -93,6 +93,15 @@ The wind sensor is ran with ``` rosrun trisonica_ros trisonica.py```.
 ## Data analysis
 There are also some other files on this Github page that serve to analyse the results obtained from the simulations and from hardware components. The results from these files are all explained in the thesis. This analysis includes matlab files about the accuracy of the detection and tracking of dynamic obstacles and the accuracy of the GPS used, as well as the calculation of the moment of inertia of the USV and the parameters of the used T200 thrusters.
 
+## Running simulation
+The simulation can be run with the following commands in this order and in seperate terminals:
+```
+  $ roslaunch sim_otter otter.launch
+  $ roslaunch sim_guidance guidance.launch
+  $ roslaunch usv_navigation usv_navigation.launch
+```
+
+
 
 
 
