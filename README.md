@@ -1,7 +1,7 @@
 # Autonomous navigation with dynamic obstacle avoidance
 This is an implementation of autonomous navigation with dynamic obstacle avoidance in a simulation and the implementation of it in real-life. There is also an explanation of what is needed to be able to use all the sensors that were used.
 
-On this page all the packages that are needed to run the simulation and to run it in real-life are found. The paper about this is found [here]().
+On this page all the packages that are needed to run the simulation and to run it in real-life are found. The paper about this is found [here](https://github.com/LouisSomers/Autonomous-navigation/blob/main/MAP_Somers.Louis.pdf).
 
 All the software is run using ROS Noetic and Gazebo 11. ROS Noetic can be installed from [here, ROS Noetic](http://wiki.ros.org/noetic/Installation/Ubuntu). Gazebo 11 can be installed from [here, Gazebo](https://classic.gazebosim.org/tutorials?tut=install_ubuntu).
 
@@ -92,5 +92,7 @@ The wind sensor is ran with ``` rosrun trisonica_ros trisonica.py```.
 
 ## Data analysis
 There are also some other files on this Github page that serve to analyse the results obtained from the simulations and from hardware components. The results from these files are all explained in the thesis. This analysis includes matlab files about the accuracy of the detection and tracking of dynamic obstacles and the accuracy of the GPS used, as well as the calculation of the moment of inertia of the USV and the parameters of the used T200 thrusters.
+
+
 
 
